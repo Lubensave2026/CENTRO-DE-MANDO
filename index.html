@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Centro de Mando — Lube N Save Z10</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap');
+  :root{
+    --am:#FDEC03;--neg:#0A0A0A;--go:#111111;--gp:#1A1A1A;--gb:#2A2A2A;--gt:#888;
+    --bl:#F5F5F5;--ve:#22C55E;--ro:#EF4444;--na:#F97316;--az:#3B82F6;--mo:#8B5CF6;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--neg);color:var(--bl);font-family:'Inter',sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden;}
+
+  /* LOGIN */
+  .login-screen{position:fixed;inset:0;background:var(--neg);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .login-box{background:var(--gp);border:1px solid var(--gb);border-radius:14px;padding:28px 24px;width:100%;max-width:340px;text-align:center;}
+  .login-logo{background:var(--am);color:var(--neg);font-weight:900;font-size:12px;letter-spacing:3px;padding:5px 12px;border-radius:4px;display:inline-block;margin-bottom:16px;}
+  .login-title{font-size:17px;font-weight:700;margin-bottom:3px;}
+  .login-sub{font-size:11px;color:var(--gt);margin-bottom:22px;}
+  .user-selector{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+  .user-btn{background:var(--go);border:1px solid var(--gb);border-radius:8px;padding:10px 6px;cursor:pointer;transition:all 0.15s;text-align:center;}
+  .user-btn:active,.user-btn:hover{border-color:var(--am);}
+  .user-btn.selected{border-color:var(--am);background:rgba(253,236,3,0.08);}
+  .ub-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;margin:0 auto 5px;}
+  .ub-name{font-size:12px;font-weight:600;color:var(--bl);}
+  .ub-role{font-size:9px;color:var(--gt);}
+  .pin-lbl{font-size:11px;color:var(--gt);margin-bottom:10px;}
+  .pin-display{display:flex;gap:8px;justify-content:center;margin-bottom:14px;min-height:36px;align-items:center;}
+  .pin-dot{width:11px;height:11px;border-radius:50%;background:var(--gb);transition:background 0.1s;}
+  .pin-dot.filled{background:var(--am);}
+  .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:210px;margin:0 auto;}
+  .pin-key{background:var(--go);border:1px solid var(--gb);border-radius:8px;padding:13px;font-size:16px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;color:var(--bl);transition:all 0.1s;}
+  .pin-key:active{background:var(--am);color:var(--neg);transform:scale(0.94);}
+  .pin-del{color:var(--gt);font-size:13px;}
+  .pin-error{color:var(--ro);font-size:11px;margin-top:10px;min-height:16px;}
+  .pin-enter{background:var(--am);color:var(--neg);border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;width:100%;margin-top:10px;font-family:'Inter',sans-serif;}
+
+  /* APP */
+  .app{display:none;}
+  .app.visible{display:block;}
+
+  /* HEADER */
+  .hdr{background:var(--go);border-bottom:2px solid var(--am);padding:0 14px;display:flex;align-items:center;justify-content:space-between;height:50px;position:sticky;top:0;z-index:100;}  .alert-on .hdr{top:58px;}
+  .hdr-logo{background:var(--am);color:var(--neg);font-weight:900;font-size:10px;letter-spacing:2px;padding:3px 7px;border-radius:3px;flex-shrink:0;}
+  .hdr-title{font-size:12px;font-weight:600;margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hdr-r{display:flex;align-items:center;gap:7px;flex-shrink:0;}
+  .vobo-btn-hdr{background:none;border:1px solid rgba(249,115,22,0.5);color:var(--na);padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:4px;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+  .bp{background:var(--ro);color:white;font-size:8px;font-weight:700;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;}
+  .uchip{background:var(--gb);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:5px;}
+  .ud{width:7px;height:7px;border-radius:50%;}
+  .logout{background:none;border:1px solid var(--gb);color:var(--gt);padding:3px 8px;border-radius:5px;cursor:pointer;font-size:10px;font-family:'Inter',sans-serif;}
+  .logout:active{border-color:var(--ro);color:var(--ro);}
+
+  /* DESKTOP LAYOUT */
+  .layout{display:grid;grid-template-columns:250px 1fr 295px;height:calc(100vh - 50px);}
+  .panel-left{background:var(--gp);border-right:1px solid var(--gb);overflow-y:auto;}
+  .panel-right{background:var(--gp);border-left:1px solid var(--gb);overflow-y:auto;}
+  .panel-center{overflow-y:auto;padding:14px 18px;}
+
+  /* TEAM MEMBER */
+  .sec-title{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gt);padding:11px 13px 5px;}
+  .tm{display:flex;align-items:flex-start;gap:8px;padding:8px 13px;cursor:pointer;border-left:3px solid transparent;transition:all 0.15s;}
+  .tm:hover{background:var(--gb);}
+  .tm.sel{border-left-color:var(--am);background:rgba(253,236,3,0.06);}
+  .av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0;}
+  .mi{flex:1;min-width:0;}
+  .mn{font-size:13px;font-weight:700;color:var(--bl);}
+  .mr{font-size:11px;color:var(--gt);}
+  .mt{font-size:10px;color:var(--az);font-family:'JetBrains Mono',monospace;margin-top:1px;}
+  .ms{display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;}
+  .ms span{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:700;}
+  .ms-a{background:rgba(59,130,246,0.15);color:#60A5FA;}
+  .ms-v{background:rgba(249,115,22,0.2);color:#FB923C;}
+  .ms-d{background:rgba(34,197,94,0.15);color:#4ADE80;}
+  .ms-p{background:rgba(253,236,3,0.1);color:var(--am);}
+  .pbar{height:7px;background:var(--gb);border-radius:4px;margin-top:6px;overflow:hidden;}
+  .pfill{height:100%;border-radius:4px;transition:width 0.6s;}
+  .pbar-lbl{font-size:10px;color:var(--gt);margin-top:2px;display:flex;justify-content:space-between;}
+
+  /* KPI */
+  .kpi-bar{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--gb);border:1px solid var(--gb);border-radius:6px;overflow:hidden;margin-bottom:12px;}
+  .kpi-item{background:var(--gp);padding:8px 6px;text-align:center;}
+  .kv{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;}
+  .kl{font-size:10px;color:var(--gt);margin-top:1px;text-transform:uppercase;letter-spacing:0.5px;}
+
+  /* FILTROS */
+  .filtros{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap;}
+  .fb{padding:4px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--gb);background:none;color:var(--gt);font-family:'Inter',sans-serif;transition:all 0.15s;}
+  .fb:hover{border-color:var(--am);color:var(--am);}
+  .fb.act{background:var(--am);color:var(--neg);border-color:var(--am);}
+  .fb.vbf{background:var(--na);color:var(--neg);border-color:var(--na);}
+
+  /* TASK CARD */
+  /* .tc styles now applied inline in buildCard for flexibility */
+  .tc{background:var(--gp);border-radius:10px;margin-bottom:14px;overflow:hidden;}
+  .tt{font-size:11px;font-weight:600;line-height:1.4;margin-bottom:5px;}
+  .tt.tdn{text-decoration:line-through;color:var(--ve);}
+  .tdesc{font-size:10px;color:var(--gt);line-height:1.5;margin-bottom:5px;}
+  .ttime{font-size:9px;color:var(--mo);font-family:'JetBrains Mono',monospace;margin-bottom:5px;}
+  .tbadges{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:6px;}
+  .badge{font-size:8px;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap;}
+  .b-alta{background:rgba(239,68,68,0.15);color:#F87171;}
+  .b-media{background:rgba(249,115,22,0.15);color:#FB923C;}
+  .b-baja{background:rgba(34,197,94,0.15);color:#4ADE80;}
+  .b-tipo{background:var(--gb);color:var(--gt);}
+  .b-done{background:rgba(34,197,94,0.2);color:var(--ve);}
+  .b-vb{background:rgba(249,115,22,0.2);color:#FB923C;animation:pulse 2s infinite;}
+  .tc-bottom{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap;}
+  .tc-who{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);}
+  .mav{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;}
+  .tc-date{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gt);}
+  .tc-date.venc{color:var(--ro);}
+  .tc-acts{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px;justify-content:flex-end;}
+  .ab{border:none;padding:6px 11px;border-radius:5px;font-size:12px;cursor:pointer;font-weight:600;font-family:'Inter',sans-serif;transition:all 0.15s;}
+  .ab-def{background:var(--gb);color:var(--gt);}
+  .ab-def:hover,.ab-def:active{background:var(--am);color:var(--neg);}
+  .ab-wa{background:rgba(34,197,94,0.1);color:#4ADE80;border:1px solid rgba(34,197,94,0.2);}
+  .ab-wa:active{background:#25D366;color:white;}
+  .ab-vb{background:rgba(249,115,22,0.15);color:#FB923C;border:1px solid rgba(249,115,22,0.3);}
+  .ab-vb:active{background:var(--na);color:var(--neg);}
+  .ab-nt{background:rgba(253,236,3,0.08);color:var(--am);border:1px solid rgba(253,236,3,0.2);}
+  .ab-re{background:rgba(59,130,246,0.1);color:#60A5FA;border:1px solid rgba(59,130,246,0.25);}
+  .ab-del{background:rgba(239,68,68,0.1);color:#F87171;border:1px solid rgba(239,68,68,0.25);}
+
+  /* NOTAS */
+  .nota-wrap{margin:6px 0;}
+  .nota-item{background:rgba(253,236,3,0.05);border:1px solid rgba(253,236,3,0.12);border-radius:4px;padding:4px 7px;font-size:10px;color:var(--bl);margin-bottom:3px;}
+  .nota-img{width:50px;height:50px;border-radius:4px;object-fit:cover;cursor:pointer;margin-top:3px;}
+  .nota-add{display:flex;gap:4px;margin-top:4px;}
+  .nota-inp{flex:1;background:var(--go);border:1px solid var(--gb);color:var(--bl);padding:5px 7px;border-radius:4px;font-size:10px;font-family:'Inter',sans-serif;outline:none;}
+  .nota-inp:focus{border-color:var(--am);}
+  .nota-img-btn{background:var(--gb);border:none;color:var(--gt);padding:5px 7px;border-radius:4px;cursor:pointer;font-size:11px;}
+  .nota-send{background:var(--am);border:none;color:var(--neg);padding:5px 8px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+
+  /* SOLICITUDES */
+  .sol-card{margin:0 10px 8px;background:var(--go);border:1px solid var(--gb);border-radius:7px;padding:10px 11px;}
+  .sol-card.urg{border-left:3px solid var(--ro);}
+  .sol-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  .sol-de{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;}
+  .sol-hora{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gt);}
+  .sol-txt{font-size:10px;color:var(--gt);line-height:1.5;margin-bottom:7px;}
+  .sol-acts{display:flex;gap:5px;}
+  .sb{border:none;padding:5px 8px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+  .sb-ok{background:var(--am);color:var(--neg);flex:1;}
+  .sb-sec{background:var(--gb);color:var(--bl);}
+
+  /* MODALS */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .modal{background:var(--gp);border:1px solid var(--gb);border-radius:10px;width:100%;max-width:480px;padding:20px;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+  .mc{background:var(--gb);border:none;color:var(--gt);width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .fg{margin-bottom:10px;}
+  .fl{display:block;font-size:9px;font-weight:700;color:var(--gt);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+  .fi,.fs,.fta{width:100%;background:var(--go);border:1px solid var(--gb);color:var(--bl);padding:7px 9px;border-radius:5px;font-size:11px;font-family:'Inter',sans-serif;outline:none;}
+  .fi:focus,.fs:focus,.fta:focus{border-color:var(--am);}
+  .fta{min-height:55px;resize:vertical;}
+  .fs option{background:var(--gp);}
+  .fr{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  .fr3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:5px;}
+  .mf{display:flex;gap:7px;justify-content:flex-end;margin-top:14px;}
+  .btn-p{background:var(--am);color:var(--neg);border:none;padding:7px 13px;border-radius:6px;font-weight:700;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;}
+  .btn-c{background:var(--gb);border:none;color:var(--bl);padding:7px 13px;border-radius:6px;font-weight:600;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;}
+
+  /* VOBO MODAL */
+  .vboverlay{position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .vbmodal{background:var(--gp);border:2px solid var(--na);border-radius:10px;width:100%;max-width:400px;padding:20px;}
+  .vb-nota{background:rgba(253,236,3,0.05);border:1px solid rgba(253,236,3,0.15);border-radius:4px;padding:4px 7px;font-size:10px;margin-bottom:3px;}
+  .btn-apr{background:var(--ve);color:var(--neg);border:none;padding:10px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;flex:1;font-family:'Inter',sans-serif;}
+  .btn-rec{background:rgba(239,68,68,0.15);color:var(--ro);border:1px solid rgba(239,68,68,0.3);padding:10px;border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;flex:1;font-family:'Inter',sans-serif;}
+
+  /* REASIGNAR */
+  .reover{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .remodal{background:var(--gp);border:1px solid var(--gb);border-radius:10px;width:100%;max-width:360px;padding:20px;}
+  .re-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px;}
+  .re-btn{background:var(--go);border:1px solid var(--gb);border-radius:7px;padding:10px 6px;cursor:pointer;text-align:center;transition:all 0.15s;}
+  .re-btn:active,.re-btn:hover{border-color:var(--am);}
+  .re-btn.sel{border-color:var(--am);background:rgba(253,236,3,0.08);}
+
+  /* MOBILE */
+  .mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--go);border-top:2px solid var(--am);z-index:90;height:54px;}
+  .mob-nav-inner{display:flex;height:100%;}
+  .mob-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;border:none;background:none;color:var(--gt);font-size:8px;font-weight:700;font-family:'Inter',sans-serif;transition:color 0.15s;padding:0;}
+  .mob-tab.act{color:var(--am);}
+  .mob-ti{font-size:19px;line-height:1;}
+  .mob-overlay{display:none;position:fixed;top:50px;left:0;right:0;bottom:54px;z-index:80;overflow-y:auto;background:var(--gp);}
+  .mob-overlay.show{display:block;}
+
+  /* STAFF VIEW */
+  .staff-tabs{display:flex;border-bottom:1px solid var(--gb);margin-bottom:12px;}
+  .staff-tab{padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;color:var(--gt);border-bottom:2px solid transparent;}
+  .staff-tab.act{color:var(--am);border-bottom-color:var(--am);}
+
+  /* LOADING */
+  .loading{position:fixed;inset:0;background:rgba(10,10,10,0.85);z-index:500;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+  .spinner{width:36px;height:36px;border:3px solid var(--gb);border-top-color:var(--am);border-radius:50%;animation:spin 0.7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes alertPulse{0%,100%{opacity:1}50%{opacity:0.85}}
+
+  /* SECTION LABEL */
+  .sec-lbl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gt);margin:12px 0 7px;display:flex;align-items:center;gap:7px;}
+  .sec-lbl::after{content:'';flex:1;height:1px;background:var(--gb);}
+
+  /* DIVIDER */
+  .dvd{height:1px;background:var(--gb);margin:6px 0;}
+
+  /* LIGHTBOX */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:600;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .lightbox img{max-width:92vw;max-height:92vh;border-radius:6px;}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:64px;right:14px;background:var(--ve);color:var(--neg);padding:8px 14px;border-radius:7px;font-weight:700;font-size:11px;z-index:700;opacity:0;transform:translateY(6px);transition:all 0.25s;font-family:'Inter',sans-serif;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.warn{background:var(--na);}
+  .toast.err{background:var(--ro);color:white;}
+
+  @media(max-width:768px){
+    .layout{display:block;}
+    .panel-left,.panel-right{display:none!important;}
+    #pcenter{height:calc(100vh - 50px - 54px);overflow-y:auto;padding:12px 13px;}
+    .mob-nav{display:flex!important;}
+    .kpi-bar{grid-template-columns:repeat(3,1fr);}
+    .kv{font-size:14px;}
+    .hdr-title{display:none;}
+    .fr{grid-template-columns:1fr;}
+    .modal{max-height:85vh;}
+  }
+  ::-webkit-scrollbar{width:4px;}
+  ::-webkit-scrollbar-thumb{background:var(--gb);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading" id="loading" style="display:none;">
+  <div class="spinner"></div>
+  <div style="font-size:12px;color:var(--gt);">Sincronizando...</div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">LNS</div>
+    <div class="login-title">Centro de Mando</div>
+    <div class="login-sub">Lube N Save — Zona 10</div>
+    <div class="user-selector" id="user-selector">
+      <div class="user-btn" onclick="selUser('Byron')" id="ubtn-Byron">
+        <div class="ub-av" style="background:var(--am);color:var(--neg);">BS</div>
+        <div class="ub-name">Byron</div><div class="ub-role">Jefe de Taller</div>
+      </div>
+      <div class="user-btn" onclick="selUser('Ricardo')" id="ubtn-Ricardo">
+        <div class="ub-av" style="background:#3B82F6;color:white;">RC</div>
+        <div class="ub-name">Ricardo</div><div class="ub-role">Asesor Servicio</div>
+      </div>
+      <div class="user-btn" onclick="selUser('Kevin')" id="ubtn-Kevin">
+        <div class="ub-av" style="background:#8B5CF6;color:white;">KG</div>
+        <div class="ub-name">Kevin</div><div class="ub-role">Asesor Partes</div>
+      </div>
+      <div class="user-btn" onclick="selUser('William')" id="ubtn-William">
+        <div class="ub-av" style="background:#22C55E;color:white;">WC</div>
+        <div class="ub-name">William</div><div class="ub-role">Mensajero</div>
+      </div>
+      <div class="user-btn" onclick="selUser('Mario')" id="ubtn-Mario" style="grid-column:1/-1;">
+        <div class="ub-av" style="background:#F97316;color:white;margin:0 auto 4px;">MC</div>
+        <div class="ub-name">Mario</div><div class="ub-role">Bodega y Compras</div>
+      </div>
+    </div>
+    <div id="pin-section" style="display:none;">
+      <div class="pin-lbl" id="pin-lbl">Ingresa tu PIN</div>
+      <div class="pin-display" id="pin-display"></div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="pk('1')">1</button>
+        <button class="pin-key" onclick="pk('2')">2</button>
+        <button class="pin-key" onclick="pk('3')">3</button>
+        <button class="pin-key" onclick="pk('4')">4</button>
+        <button class="pin-key" onclick="pk('5')">5</button>
+        <button class="pin-key" onclick="pk('6')">6</button>
+        <button class="pin-key" onclick="pk('7')">7</button>
+        <button class="pin-key" onclick="pk('8')">8</button>
+        <button class="pin-key" onclick="pk('9')">9</button>
+        <button class="pin-key pin-del" onclick="pb()">⌫</button>
+        <button class="pin-key" onclick="pk('0')">0</button>
+        <button class="pin-key pin-del" onclick="backToUsers()">↩</button>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <button class="pin-enter" onclick="pinEnter()">Ingresar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+
+<!-- ALERTA VENCIDAS (fija arriba del header) -->
+<div id="alerta-vencidas" style="display:none;position:fixed;top:0;left:0;right:0;z-index:150;background:linear-gradient(135deg,#7f1d1d,#991b1b);border-bottom:3px solid var(--ro);padding:10px 16px;animation:alertPulse 1.5s ease-in-out infinite;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;max-width:1400px;margin:0 auto;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px;">🚨</span>
+      <div>
+        <div style="font-size:14px;font-weight:900;color:white;letter-spacing:0.5px;">¡TAREAS VENCIDAS!</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.8);" id="alerta-txt">Hay tareas que superaron su fecha/hora límite</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="waVencidasManual()" style="background:white;color:#991b1b;border:none;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">📲 Enviar WA ahora</button>
+      <button onclick="cerrarAlerta()" style="background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.3);padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;">✕ Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div style="display:flex;align-items:center;min-width:0;">
+    <div class="hdr-logo">LNS</div>
+    <div class="hdr-title">Centro de Mando — Z10</div>
+  </div>
+  <div class="hdr-r">
+    <button class="vobo-btn-hdr" id="vobo-hbtn" style="display:none;" onclick="abrirPrimerVobo()">⏳<span class="bp" id="vobo-badge">0</span></button>
+    <div class="uchip"><span class="ud" id="udot"></span><span id="uname">—</span></div>
+    <button class="logout" onclick="logout()">Salir</button>
+    <span style="font-size:10px;color:var(--gt);white-space:nowrap;" id="clk"></span>
+  </div>
+</div>
+
+<!-- VISTA JEFE -->
+<div id="view-jefe" style="display:none;">
+<div class="layout">
+  <!-- LEFT -->
+  <div class="panel-left">
+    <div class="sec-title">Equipo Administrativo</div>
+    <div class="tm sel" id="tm-todos" onclick="selMember(this,'todos')">
+      <div class="av" style="background:var(--am);color:var(--neg);">★</div>
+      <div class="mi"><div class="mn">Todos</div><div class="mr">Vista general</div><div class="ms" id="stats-todos"></div></div>
+    </div>
+    <div class="tm" id="tm-Ricardo" onclick="selMember(this,'Ricardo')">
+      <div class="av" style="background:#3B82F6;color:white;">RC</div>
+      <div class="mi"><div class="mn">Ricardo Córbar</div><div class="mr">Asesor Servicio</div><div class="mt">+502 5413 7857</div><div class="ms" id="stats-Ricardo"></div><div class="pbar"><div class="pfill" id="pb-Ricardo"></div></div><div class="pbar-lbl" id="pbl-Ricardo"></div></div>
+    </div>
+    <div class="tm" id="tm-Kevin" onclick="selMember(this,'Kevin')">
+      <div class="av" style="background:#8B5CF6;color:white;">KG</div>
+      <div class="mi"><div class="mn">Kevin García</div><div class="mr">Asesor Partes</div><div class="mt">+502 5482 3662</div><div class="ms" id="stats-Kevin"></div><div class="pbar"><div class="pfill" id="pb-Kevin"></div></div><div class="pbar-lbl" id="pbl-Kevin"></div></div>
+    </div>
+    <div class="tm" id="tm-William" onclick="selMember(this,'William')">
+      <div class="av" style="background:#22C55E;color:white;">WC</div>
+      <div class="mi"><div class="mn">William Calel</div><div class="mr">Mensajero</div><div class="mt">+502 4842 8251</div><div class="ms" id="stats-William"></div><div class="pbar"><div class="pfill" id="pb-William"></div></div><div class="pbar-lbl" id="pbl-William"></div></div>
+    </div>
+    <div class="tm" id="tm-Mario" onclick="selMember(this,'Mario')">
+      <div class="av" style="background:#F97316;color:white;">MC</div>
+      <div class="mi"><div class="mn">Mario Chacón</div><div class="mr">Bodega y Compras</div><div class="mt">+502 3151 1196</div><div class="ms" id="stats-Mario"></div><div class="pbar"><div class="pfill" id="pb-Mario"></div></div><div class="pbar-lbl" id="pbl-Mario"></div></div>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="panel-center" id="pcenter">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <div><div style="font-size:14px;font-weight:700;" id="ctitle">Todas las Tareas</div><div style="font-size:10px;color:var(--gt);margin-top:1px;" id="csub">—</div></div>
+      <button class="btn-p" onclick="openModal()">+ Nueva Tarea</button>
+    </div>
+    <div class="kpi-bar">
+      <div class="kpi-item"><div class="kv" id="k-a" style="color:var(--az)">0</div><div class="kl">Proceso</div></div>
+      <div class="kpi-item"><div class="kv" id="k-v" style="color:var(--na)">0</div><div class="kl">Vo.Bo.</div></div>
+      <div class="kpi-item"><div class="kv" id="k-d" style="color:var(--ve)">0</div><div class="kl">Complet.</div></div>
+      <div class="kpi-item"><div class="kv" id="k-t" style="color:var(--gt)">0</div><div class="kl">Total</div></div>
+      <div class="kpi-item"><div class="kv" id="k-p" style="color:var(--am)">0%</div><div class="kl">Cumpl.</div></div>
+    </div>
+    <div class="filtros">
+      <button class="fb act" id="fb-activa" onclick="setF(this,'activa')">En Proceso</button>
+      <button class="fb" id="fb-vobo" onclick="setF(this,'pendiente-vobo')">⏳ Vo.Bo.</button>
+      <button class="fb" onclick="setF(this,'completada')">✅ Completadas</button>
+      <button class="fb" onclick="setF(this,'todos')">Todas</button>
+      <button class="fb" onclick="setF(this,'alta')">🔴 Alta</button>
+      <button class="fb" onclick="setF(this,'media')">🟠 Media</button>
+    </div>
+    <div id="tlist"><div style="text-align:center;color:var(--gt);padding:30px;font-size:12px;">Cargando tareas...</div></div>
+  </div>
+
+  <!-- RIGHT — SOLICITUDES -->
+  <div class="panel-right" id="sol-panel">
+    <div class="sec-title" style="padding-bottom:10px;">Solicitudes</div>
+    <div id="sol-list"><div style="font-size:11px;color:var(--gt);text-align:center;padding:16px;">Sin solicitudes pendientes.</div></div>
+    <div class="dvd" style="margin:8px 10px;"></div>
+    <div class="sec-title">Atendidas Hoy</div>
+    <div id="sol-atendidas" style="padding:0 10px 10px;"></div>
+  </div>
+</div>
+</div>
+
+<!-- VISTA STAFF -->
+<div id="view-staff" style="display:none;">
+  <div style="max-width:560px;margin:20px auto;padding:0 13px;">
+    <div style="background:var(--gp);border:1px solid var(--gb);border-radius:10px;overflow:hidden;">
+      <div id="staff-hdr" style="background:var(--am);padding:13px 16px;display:flex;align-items:center;gap:10px;">
+        <div class="av" id="sav" style="width:38px;height:38px;font-size:12px;background:var(--neg);color:var(--am);">RC</div>
+        <div>
+          <div style="font-weight:700;font-size:13px;color:var(--neg);" id="sname">—</div>
+          <div style="font-size:10px;color:rgba(0,0,0,0.55);" id="srole">—</div>
+          <div style="font-size:9px;color:rgba(0,0,0,0.45);font-family:'JetBrains Mono',monospace;" id="stel">—</div>
+        </div>
+        <div style="margin-left:auto;text-align:right;">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:900;color:var(--neg);" id="spct">0%</div>
+          <div style="font-size:9px;color:rgba(0,0,0,0.4);text-transform:uppercase;letter-spacing:1px;">Cumplimiento</div>
+        </div>
+      </div>
+      <div class="staff-tabs">
+        <div class="staff-tab act" id="stb-p" onclick="staffTab('p')">📋 Mis Tareas</div>
+        <div class="staff-tab" id="stb-d" onclick="staffTab('d')">✅ Completadas</div>
+        <div class="staff-tab" id="stb-s" onclick="staffTab('s')">📨 Solicitudes</div>
+      </div>
+      <div style="padding:0 14px 14px;">
+        <div id="staff-tareas"></div>
+        <div id="staff-done" style="display:none;"></div>
+        <div id="staff-sol" style="display:none;">
+          <div class="fg"><label class="fl">¿Qué necesitas?</label><textarea class="fta" id="ss-txt" placeholder="Describe tu solicitud..."></textarea></div>
+          <div class="fg"><label class="fl">Urgencia</label><select class="fs" id="ss-urg"><option>Normal</option><option>Urgente 🔴</option></select></div>
+          <div class="fg" style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--go);border-radius:6px;border:1px solid var(--gb);">
+            <input type="checkbox" id="ss-wa" style="width:16px;height:16px;cursor:pointer;">
+            <label for="ss-wa" style="font-size:12px;color:var(--gt);cursor:pointer;">También enviar por WhatsApp a Byron</label>
+          </div>
+          <button class="btn-p" style="width:100%;font-size:13px;padding:10px;" onclick="enviarSol()">Enviar al Jefe ▶</button>
+
+          <!-- HISTORIAL DE MIS SOLICITUDES -->
+          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gb);">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--gt);margin-bottom:10px;">Mis solicitudes enviadas</div>
+            <div id="staff-sol-historial"><div style="font-size:12px;color:var(--gt);text-align:center;padding:12px;">Sin solicitudes enviadas aún.</div></div>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE PANELS -->
+<div class="mob-overlay" id="mob-equipo">
+  <div style="padding:13px;" id="mob-equipo-inner"></div>
+</div>
+<div class="mob-overlay" id="mob-solic">
+  <div style="padding:13px;">
+    <div class="sec-title" style="padding:0 0 8px;">Solicitudes del Personal</div>
+    <div id="mob-sol-list"><div style="font-size:11px;color:var(--gt);text-align:center;padding:16px;">Sin solicitudes pendientes.</div></div>
+    <div class="dvd"></div>
+    <div class="sec-title" style="padding:2px 0 6px;">Atendidas Hoy</div>
+    <div id="mob-atendidas"></div>
+  </div>
+</div>
+
+<!-- MOBILE NAV (jefe only) -->
+<nav class="mob-nav" id="mob-nav" style="display:none!important;">
+  <div class="mob-nav-inner">
+    <button class="mob-tab act" id="mobt-t" onclick="mobNav('t')"><span class="mob-ti">📋</span>Tareas</button>
+    <button class="mob-tab" id="mobt-e" onclick="mobNav('e')"><span class="mob-ti">👥</span>Equipo</button>
+    <button class="mob-tab" id="mobt-s" onclick="mobNav('s')"><span class="mob-ti">📨</span>Solicitudes</button>
+    <button class="mob-tab" id="mobt-n" onclick="mobNav('n')"><span class="mob-ti">➕</span>Nueva</button>
+  </div>
+</nav>
+
+</div><!-- /app -->
+
+<!-- MODAL NUEVA TAREA -->
+<div class="overlay" id="modal" style="display:none;" onclick="if(event.target.id==='modal')closeModal()">
+  <div class="modal">
+    <div class="modal-title">＋ Nueva Tarea <button class="mc" onclick="closeModal()">✕</button></div>
+    <div class="fg"><label class="fl">Título *</label><input class="fi" id="f-tit" placeholder="Describe la tarea..."></div>
+    <div class="fg"><label class="fl">Instrucciones</label><textarea class="fta" id="f-desc" placeholder="Qué hacer, cómo y datos relevantes..."></textarea></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Asignar a *</label>
+        <select class="fs" id="f-quien">
+          <option value="Ricardo">Ricardo Córbar</option><option value="Kevin">Kevin García</option>
+          <option value="William">William Calel</option><option value="Mario">Mario Chacón</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Prioridad</label>
+        <select class="fs" id="f-prior"><option value="alta">🔴 Alta</option><option value="media" selected>🟠 Media</option><option value="baja">🟢 Baja</option></select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Tipo</label>
+        <select class="fs" id="f-tipo"><option>Administrativo</option><option>Compras</option><option>Atención al cliente</option><option>Operativo</option><option>Reporte</option><option>Bodega</option></select>
+      </div>
+      <div class="fg"><label class="fl">Fecha límite</label><input class="fi" id="f-fecha" type="date"></div>
+    </div>
+    <div class="fg"><label class="fl">Hora estimada de entrega</label>
+      <div class="fr">
+        <input class="fi" id="f-hora" type="time" placeholder="10:30">
+        <div style="display:flex;align-items:center;">
+          <span style="font-size:10px;color:var(--gt);">hrs. del día indicado</span>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn-c" onclick="closeModal()">Cancelar</button><button class="btn-p" onclick="crearTarea()">Crear y Delegar ▶</button></div>
+  </div>
+</div>
+
+<!-- MODAL VO.BO. -->
+<div class="vboverlay" id="vb-modal" style="display:none;">
+  <div class="vbmodal">
+    <div style="font-size:9px;color:var(--na);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;">⏳ Pendiente de Vo.Bo.</div>
+    <div style="font-size:12px;font-weight:700;margin-bottom:3px;" id="vb-quien"></div>
+    <div style="font-size:11px;font-weight:600;margin-bottom:5px;" id="vb-task"></div>
+    <div style="font-size:10px;color:var(--gt);margin-bottom:7px;" id="vb-desc"></div>
+    <div style="font-size:9px;color:var(--mo);font-family:'JetBrains Mono',monospace;margin-bottom:8px;" id="vb-tiempo"></div>
+    <div id="vb-notas" style="margin-bottom:12px;"></div>
+    <div style="display:flex;gap:7px;"><button class="btn-apr" onclick="aprobarVobo()">✓ Dar Vo.Bo.</button><button class="btn-rec" onclick="rechazarVobo()">✗ Regresar</button></div>
+  </div>
+</div>
+
+<!-- REASIGNAR -->
+<div class="reover" id="re-modal" style="display:none;">
+  <div class="remodal">
+    <div style="font-size:13px;font-weight:700;margin-bottom:5px;">🔄 Reasignar tarea</div>
+    <div style="font-size:10px;color:var(--gt);margin-bottom:12px;padding:6px 8px;background:var(--go);border-radius:4px;border-left:3px solid var(--am);" id="re-task">—</div>
+    <div class="re-grid">
+      <div class="re-btn" id="rb-Ricardo" onclick="selRe('Ricardo')"><div class="av" style="background:#3B82F6;color:white;width:28px;height:28px;font-size:9px;margin:0 auto 4px;">RC</div><div style="font-size:11px;font-weight:600;">Ricardo</div></div>
+      <div class="re-btn" id="rb-Kevin" onclick="selRe('Kevin')"><div class="av" style="background:#8B5CF6;color:white;width:28px;height:28px;font-size:9px;margin:0 auto 4px;">KG</div><div style="font-size:11px;font-weight:600;">Kevin</div></div>
+      <div class="re-btn" id="rb-William" onclick="selRe('William')"><div class="av" style="background:#22C55E;color:white;width:28px;height:28px;font-size:9px;margin:0 auto 4px;">WC</div><div style="font-size:11px;font-weight:600;">William</div></div>
+      <div class="re-btn" id="rb-Mario" onclick="selRe('Mario')"><div class="av" style="background:#F97316;color:white;width:28px;height:28px;font-size:9px;margin:0 auto 4px;">MC</div><div style="font-size:11px;font-weight:600;">Mario</div></div>
+    </div>
+    <div style="display:flex;gap:7px;"><button class="btn-c" style="flex:1;" onclick="closeRe()">Cancelar</button><button class="btn-p" style="flex:2;" onclick="confirmarRe()">Confirmar ▶</button></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" style="display:none;" onclick="this.style.display='none'"><img id="lb-img" src="" alt=""></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== FIREBASE CONFIG =====
+const FB_URL = 'https://lube-n-save-flow-default-rtdb.firebaseio.com';
+const FB_PATH = '/centroMando';
+
+async function fbGet(path) {
+  const r = await fetch(`${FB_URL}${FB_PATH}${path}.json`);
+  return r.ok ? r.json() : null;
+}
+async function fbSet(path, data) {
+  await fetch(`${FB_URL}${FB_PATH}${path}.json`, { method:'PUT', body:JSON.stringify(data) });
+}
+async function fbPush(path, data) {
+  const r = await fetch(`${FB_URL}${FB_PATH}${path}.json`, { method:'POST', body:JSON.stringify(data) });
+  const j = await r.json();
+  return j.name;
+}
+async function fbDelete(path) {
+  await fetch(`${FB_URL}${FB_PATH}${path}.json`, { method:'DELETE' });
+}
+async function fbUpdate(path, data) {
+  await fetch(`${FB_URL}${FB_PATH}${path}.json`, { method:'PATCH', body:JSON.stringify(data) });
+}
+
+// ===== FIREBASE SYNC — POLLING ESTABLE (reemplaza SSE inestable) =====
+let sseSource = null;
+let pollInterval = null;
+let lastHash = '';
+let isSyncing = false;
+
+function hashData(obj){ try{return JSON.stringify(obj);}catch(e){return '';} }
+
+async function syncData(){
+  if(isSyncing) return;
+  isSyncing = true;
+  try{
+    const data = await fbGet('');
+    const newTareas = data&&data.tareas ? data.tareas : {};
+    const newSols   = data&&data.solicitudes ? data.solicitudes : {};
+    const newHash   = hashData({t:newTareas, s:newSols});
+    if(newHash !== lastHash){
+      lastHash = newHash;
+      tareas = newTareas;
+      solicitudes = newSols;
+      if(currentUser==='Byron'){ renderJefe(); }
+      else { renderStaffView(); }
+    }
+    // Check vencidas on every poll (Byron only)
+    if(currentUser==='Byron') checkVencidas();
+  }catch(e){}
+  finally{ isSyncing = false; }
+}
+
+// ===== SISTEMA DE ALERTAS DE VENCIMIENTO =====
+const waEnviados = new Set(); // Track IDs already auto-notified this session
+let alertaCerrada = false;
+
+function estaVencida(t){
+  if(t.status==='completada'||t.status==='archivada'||t.status==='pendiente-vobo') return false;
+  if(!t.fecha) return false;
+  const ahora = new Date();
+  const hoy = ahora.toISOString().split('T')[0];
+  if(t.fecha < hoy) return true; // fecha pasada
+  if(t.fecha === hoy && t.hora){
+    // Same day — check if time has passed
+    const [hh,mm] = t.hora.split(':').map(Number);
+    const limite = new Date();
+    limite.setHours(hh,mm,0,0);
+    return ahora > limite;
+  }
+  return false;
+}
+
+function checkVencidas(){
+  const vencidas = Object.entries(tareas).filter(([,t])=>estaVencida(t));
+  const alerta = document.getElementById('alerta-vencidas');
+  const alertaTxt = document.getElementById('alerta-txt');
+  if(!alerta) return;
+
+  if(vencidas.length===0){
+    alerta.style.display='none';
+    alertaCerrada=false;
+    return;
+  }
+
+  // Update alert text
+  const nombres = [...new Set(vencidas.map(([,t])=>t.asignado))].join(', ');
+  if(alertaTxt) alertaTxt.textContent = `${vencidas.length} tarea${vencidas.length>1?'s':''} vencida${vencidas.length>1?'s':''} — ${nombres}`;
+
+  // Show alert if not manually closed
+  if(!alertaCerrada) alerta.style.display='block';
+
+  // Auto WA — only first time per task per session
+  vencidas.forEach(([id,t])=>{
+    if(!waEnviados.has(id)){
+      waEnviados.add(id);
+      enviarWaVencida(id, t, true); // auto=true (opens silently)
+    }
+  });
+}
+
+function enviarWaVencida(id, t, auto){
+  const av = TEAM[t.asignado];
+  if(!av) return;
+  const tel = av.tel.replace(/\D/g,'');
+  const ahora = new Date().toLocaleTimeString('es-GT',{hour:'2-digit',minute:'2-digit'});
+  const msg = encodeURIComponent(
+    `🚨 *TAREA VENCIDA — Centro de Mando*\n\n` +
+    `Hola ${t.asignado}, la siguiente tarea ya venció su tiempo límite:\n\n` +
+    `📋 *${t.titulo}*\n${t.desc}\n` +
+    `${t.hora?'🕐 Debía entregarse a las '+t.hora+' hrs.\n':''}` +
+    `📅 Fecha límite: ${t.fecha}\n\n` +
+    `Por favor atiéndela a la brevedad. — Byron [${ahora}]`
+  );
+  if(auto){
+    // Auto: open in background tab (may be blocked by browser — user sees it on first violation)
+    const win = window.open('about:blank','_blank');
+    if(win) setTimeout(()=>{ win.location.href = 'https://wa.me/'+tel+'?text='+msg; }, 100);
+  } else {
+    window.open('https://wa.me/'+tel+'?text='+msg,'_blank');
+  }
+}
+
+function waVencidasManual(){
+  const vencidas = Object.entries(tareas).filter(([,t])=>estaVencida(t));
+  if(!vencidas.length){ toast('No hay tareas vencidas'); return; }
+  vencidas.forEach(([id,t])=>{ enviarWaVencida(id,t,false); });
+  toast(`WA enviado a ${vencidas.length} colaborador${vencidas.length>1?'es':''} ✓`);
+}
+
+function cerrarAlerta(){
+  alertaCerrada=true;
+  document.getElementById('alerta-vencidas').style.display='none';
+}
+
+function startListen(){
+  if(pollInterval) clearInterval(pollInterval);
+  // Poll each 4 seconds — stable and works on all devices
+  pollInterval = setInterval(syncData, 4000);
+  // Initial sync already done in initApp via loadAndRender
+}
+
+// ===== CONSTANTS =====
+const PINS = { Byron:'225181514', Ricardo:'1893118', Kevin:'11522914', William:'23912129', Mario:'13118915' };
+const BYRON_WA = '50259670253';
+const TEAM = {
+  Ricardo:{bg:'#3B82F6',initials:'RC',role:'Asesor de Servicio',tel:'+502 5413 7857'},
+  Kevin:  {bg:'#8B5CF6',initials:'KG',role:'Asesor de Partes',  tel:'+502 5482 3662'},
+  William:{bg:'#22C55E',initials:'WC',role:'Mensajero',          tel:'+502 4842 8251'},
+  Mario:  {bg:'#F97316',initials:'MC',role:'Bodega y Compras',   tel:'+502 3151 1196'},
+};
+
+// ===== STATE =====
+let currentUser=null, selUserL=null, pinBuf='';
+let tareas={}, solicitudes={};
+let filtro='activa', miembro='todos';
+let vboId=null, reId=null, reNewUser=null;
+let staffTab_='p';
+
+// ===== SESSION =====
+function saveS(u){try{localStorage.setItem('cdm_u',u);}catch(e){}}
+function loadS(){try{return localStorage.getItem('cdm_u');}catch(e){return null;}}
+function clearS(){try{localStorage.removeItem('cdm_u');}catch(e){}}
+
+// ===== UTILS =====
+function ts(){return new Date().toLocaleTimeString('es-GT',{hour:'2-digit',minute:'2-digit'});}
+function fd(s){if(!s)return'';return new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'});}
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'')+' show';setTimeout(()=>t.className='toast',3000);}
+function loading(show){document.getElementById('loading').style.display=show?'flex':'none';}
+function lb(src){document.getElementById('lb-img').src=src;document.getElementById('lightbox').style.display='flex';}
+
+// ===== PIN LOGIN =====
+function selUser(n){
+  selUserL=n;
+  document.querySelectorAll('.user-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('ubtn-'+n).classList.add('selected');
+  document.getElementById('user-selector').style.display='none';
+  document.getElementById('pin-section').style.display='block';
+  document.getElementById('pin-lbl').textContent=`Hola ${n}, ingresa tu PIN`;
+  pinBuf=''; renderDots(); document.getElementById('pin-error').textContent='';
+}
+function backToUsers(){selUserL=null;pinBuf='';document.getElementById('user-selector').style.display='grid';document.getElementById('pin-section').style.display='none';document.querySelectorAll('.user-btn').forEach(b=>b.classList.remove('selected'));}
+function pk(d){if(pinBuf.length>=10)return;pinBuf+=d;renderDots();}
+function pb(){pinBuf=pinBuf.slice(0,-1);renderDots();document.getElementById('pin-error').textContent='';}
+function renderDots(){const l=pinBuf.length,pin=PINS[selUserL]||'';document.getElementById('pin-display').innerHTML=Array.from(pin).map((_,i)=>`<div class="pin-dot ${i<l?'filled':''}"></div>`).join('');}
+function pinEnter(){
+  if(!selUserL)return;
+  if(pinBuf===PINS[selUserL]){
+    currentUser=selUserL;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').classList.add('visible');
+    saveS(currentUser);
+    initApp();
+  } else {
+    document.getElementById('pin-error').textContent='PIN incorrecto.';
+    pinBuf=''; renderDots();
+    document.getElementById('pin-display').querySelectorAll('.pin-dot').forEach(d=>{d.style.background='var(--ro)';setTimeout(()=>d.style.background='',500);});
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(!selUserL)return;
+  if(e.key>='0'&&e.key<='9')pk(e.key);
+  if(e.key==='Backspace')pb();
+  if(e.key==='Enter')pinEnter();
+});
+
+function logout(){
+  currentUser=null;selUserL=null;pinBuf='';clearS();
+  if(sseSource)sseSource.close();
+  if(pollInterval){clearInterval(pollInterval);pollInterval=null;}
+  lastHash='';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('view-jefe').style.display='none';
+  document.getElementById('view-staff').style.display='none';
+  document.getElementById('mob-nav').style.cssText='display:none!important';
+  backToUsers();
+}
+
+// Auto-login
+(function(){const s=loadS();if(s&&PINS[s]){currentUser=s;document.getElementById('login-screen').style.display='none';document.getElementById('app').classList.add('visible');initApp();}})();
+
+// ===== INIT APP =====
+async function initApp(){
+  const u=currentUser;
+  document.getElementById('uname').textContent=u;
+  const av=TEAM[u];
+  document.getElementById('udot').style.background=av?av.bg:'var(--am)';
+  loading(true);
+  await loadAndRender();
+  loading(false);
+  startListen();
+  if(u==='Byron'){
+    document.getElementById('view-jefe').style.display='block';
+    document.getElementById('view-staff').style.display='none';
+    document.getElementById('mob-nav').style.cssText='display:flex!important;';
+    renderJefe();
+    // Check vencidas immediately on login
+    checkVencidas();
+  } else {
+    document.getElementById('view-jefe').style.display='none';
+    document.getElementById('view-staff').style.display='block';
+    document.getElementById('mob-nav').style.cssText='display:none!important;';
+    renderStaffHeader();
+    renderStaffView();
+  }
+  startClock();
+}
+
+async function loadAndRender(){
+  const data=await fbGet('');
+  tareas=data&&data.tareas?data.tareas:{};
+  solicitudes=data&&data.solicitudes?data.solicitudes:{};
+}
+
+// ===== STATS =====
+function calcStats(n){
+  const list=Object.values(tareas).filter(t=>n==='todos'||t.asignado===n);
+  const a=list.filter(t=>t.status==='activa').length;
+  const v=list.filter(t=>t.status==='pendiente-vobo').length;
+  const d=list.filter(t=>t.status==='completada').length;
+  const tot=list.length;
+  return{a,v,d,tot,pct:tot>0?Math.round(d/tot*100):0};
+}
+
+// ===== RENDER JEFE =====
+function renderJefe(){
+  updateStats();
+  renderTareas();
+  renderSolicitudes();
+}
+
+function updateStats(){
+  const g=calcStats('todos');
+  document.getElementById('k-a').textContent=g.a;
+  document.getElementById('k-v').textContent=g.v;
+  document.getElementById('k-d').textContent=g.d;
+  document.getElementById('k-t').textContent=g.tot;
+  document.getElementById('k-p').textContent=g.pct+'%';
+  const vb=document.getElementById('vobo-hbtn');
+  document.getElementById('vobo-badge').textContent=g.v;
+  vb.style.display=g.v>0?'flex':'none';
+  document.getElementById('fb-vobo').textContent=g.v>0?`⏳ Vo.Bo. (${g.v})`:'⏳ Vo.Bo.';
+  Object.keys(TEAM).forEach(n=>{
+    const s=calcStats(n);
+    const color=s.pct>=80?'var(--ve)':s.pct>=50?'var(--na)':'var(--ro)';
+    const pb=document.getElementById('pb-'+n);
+    if(pb){pb.style.width=s.pct+'%';pb.style.background=color;}
+    const sd=document.getElementById('stats-'+n);
+    if(sd)sd.innerHTML=`<span class="ms-a">${s.a} proc.</span>${s.v>0?`<span class="ms-v">${s.v} Vo.Bo.</span>`:''}<span class="ms-d">${s.d}✓</span><span class="ms-p">${s.pct}%</span>`;
+    // pct label under bar
+    const pbl=document.getElementById('pbl-'+n);
+    if(pbl)pbl.innerHTML=`<span style="color:var(--gt);">${s.d} de ${s.tot} completadas</span><span style="color:${color};font-weight:700;">${s.pct}%</span>`;
+  });
+  const st=calcStats('todos'),td=document.getElementById('stats-todos');
+  if(td)td.innerHTML=`<span class="ms-a">${st.a} proc.</span>${st.v>0?`<span class="ms-v">${st.v} Vo.Bo.</span>`:''}<span class="ms-d">${st.d}✓</span><span class="ms-p">${st.pct}%</span>`;
+  const s2=calcStats(miembro);
+  const cs=document.getElementById('csub');
+  if(cs)cs.textContent=`${s2.a} proceso · ${s2.v} Vo.Bo. · ${s2.d} completadas · ${s2.pct}% cumplimiento`;
+}
+
+function renderTareas(){
+  const c=document.getElementById('tlist');if(!c)return;
+  const hoy=new Date().toISOString().split('T')[0];
+  const list=Object.entries(tareas).filter(([id,t])=>{
+    if(miembro!=='todos'&&t.asignado!==miembro)return false;
+    if(filtro==='todos')return true;
+    if(filtro==='alta')return t.status==='activa'&&t.prioridad==='alta';
+    if(filtro==='media')return t.status==='activa'&&t.prioridad==='media';
+    return t.status===filtro;
+  });
+  if(!list.length){c.innerHTML=`<div style="text-align:center;color:var(--gt);padding:28px;font-size:11px;">No hay tareas en esta categoría ✓</div>`;return;}
+  const activas=list.filter(([,t])=>t.status!=='completada');
+  const comp=list.filter(([,t])=>t.status==='completada');
+  let html='';
+  activas.forEach(([id,t])=>{html+=buildCard(id,t,hoy);});
+  if(comp.length&&(filtro==='completada'||filtro==='todos')){
+    html+=`<div class="sec-lbl">Completadas y aprobadas</div>`;
+    comp.forEach(([id,t])=>{html+=buildCard(id,t,hoy);});
+  }
+  c.innerHTML=html;
+}
+
+function buildCard(id,t,hoy){
+  const av=TEAM[t.asignado]||{bg:'#888',initials:'?'};
+  const nc=(t.notas&&Object.keys(t.notas).length)||0;
+  const noSec=`<div id="ns-${id}" style="display:none;margin:8px 0 4px;">${buildNotasJefe(id,t)}</div>`;
+  const vencida = estaVencida(t);
+  const borderColor = vencida?'#EF4444':t.prioridad==='alta'?'var(--ro)':t.prioridad==='media'?'var(--na)':'var(--ve)';
+
+  // STATUS badge — siempre visible y claro
+  let statusTag='';
+  if(vencida){
+    statusTag=`<span style="background:#7f1d1d;color:#fca5a5;font-size:11px;font-weight:700;padding:4px 9px;border-radius:5px;animation:alertPulse 1s infinite;">⏰ VENCIDA</span>`;
+  } else if(t.status==='activa'){
+    statusTag=`<span style="background:rgba(59,130,246,0.15);color:#60A5FA;font-size:11px;font-weight:700;padding:4px 9px;border-radius:5px;">🔵 EN PROCESO</span>`;
+  } else if(t.status==='pendiente-vobo'){
+    statusTag=`<span style="background:rgba(249,115,22,0.2);color:#FB923C;font-size:11px;font-weight:700;padding:4px 9px;border-radius:5px;animation:pulse 2s infinite;">⏳ PEND. VO.BO.</span>`;
+  } else if(t.status==='completada'){
+    statusTag=`<span style="background:rgba(34,197,94,0.2);color:var(--ve);font-size:11px;font-weight:700;padding:4px 9px;border-radius:5px;">✅ COMPLETADA</span>`;
+  }
+
+  const mgmt=`<div class="tc-acts" style="border-top:1px solid var(--gb);padding-top:8px;margin-top:8px;">
+    <button class="ab ab-wa" onclick="sendWA('${id}')" title="Recordatorio WA">📲 WA</button>
+    <button class="ab ab-nt" onclick="togNotas('${id}')">📝${nc?' ('+nc+')':''}</button>
+    <button class="ab ab-re" onclick="openRe('${id}')">⇄ Reasignar</button>
+    ${t.status==='completada'?`<button class="ab" style="background:rgba(136,136,136,0.15);color:var(--gt);border:1px solid var(--gb);" onclick="archivarJefe('${id}')">📦 Archivar</button>`:`<button class="ab ab-del" onclick="delTarea('${id}')">🗑 Eliminar</button>`}
+  </div>`;
+
+  // Action button for vobo panel
+  let actionBtn='';
+  if(t.status==='pendiente-vobo') actionBtn=`<button class="ab ab-vb" style="font-size:12px;padding:6px 12px;" onclick="openVobo('${id}')">⏳ Dar Vo.Bo.</button>`;
+  if(vencida) actionBtn+=`<button onclick="enviarWaVencida('${id}',tareas['${id}'],false)" style="background:var(--ro);color:white;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;margin-left:4px;">📲 WA urgente</button>`;
+
+  return `<div class="tc p-${t.prioridad} ${t.status}" id="card-${id}" style="border:2px solid ${borderColor};border-radius:10px;padding:0;margin-bottom:14px;overflow:hidden;box-shadow:${vencida?'0 0 16px rgba(239,68,68,0.4)':'0 2px 8px rgba(0,0,0,0.3)'};">
+
+    <!-- HEADER: colaborador + tipo + STATUS -->
+    <div style="background:rgba(255,255,255,0.04);border-bottom:1px solid var(--gb);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+        <div style="width:36px;height:36px;border-radius:50%;background:${av.bg};color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;flex-shrink:0;">${av.initials}</div>
+        <div style="min-width:0;">
+          <div style="font-size:15px;font-weight:900;color:${av.bg};line-height:1.1;">${t.asignado}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--am);margin-top:1px;text-transform:uppercase;letter-spacing:0.5px;">${t.tipo}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+        ${statusTag}
+        ${t.status!=='completada'&&!vencida?`<span class="badge b-${t.prioridad}" style="font-size:10px;padding:2px 7px;">${t.prioridad.toUpperCase()}</span>`:''}
+      </div>
+    </div>
+
+    <!-- BODY: título + desc + hora -->
+    <div style="padding:12px 14px;">
+      <div style="font-size:15px;font-weight:700;color:${t.status==='completada'?'var(--ve)':vencida?'var(--ro)':'var(--bl)'};line-height:1.4;margin-bottom:7px;${t.status==='completada'?'text-decoration:line-through;':''}">${t.titulo}</div>
+      <div style="font-size:13px;color:var(--gt);line-height:1.6;margin-bottom:7px;">${t.desc}</div>
+      ${t.hora?`<div style="font-size:12px;color:var(--mo);font-family:'JetBrains Mono',monospace;background:rgba(139,92,246,0.08);padding:5px 9px;border-radius:5px;display:inline-block;margin-bottom:6px;">🕐 ${fd(t.fecha)} a las ${t.hora} hrs.</div>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:6px;">
+        <div style="font-size:12px;color:${vencida?'var(--ro)':'var(--gt)'};">📅 ${fd(t.fecha)}${t.hora?' · '+t.hora+' hrs.':''}</div>
+        ${actionBtn?`<div style="display:flex;gap:5px;flex-wrap:wrap;">${actionBtn}</div>`:''}
+      </div>
+      ${noSec}
+    </div>
+
+    <!-- FOOTER: acciones -->
+    ${mgmt}
+  </div>`;
+}
+
+function buildNotasJefe(id,t){
+  const notas=t.notas?Object.values(t.notas):[];
+  const items=notas.map(n=>`<div class="nota-item"><span style="color:var(--gt);font-size:9px;">${n.autor}·${n.ts} — </span>${n.txt}${n.img?`<br><img src="${n.img}" class="nota-img" onclick="lb('${n.img}')">`:''}</div>`).join('');
+  return `<div class="nota-wrap">
+    ${items||'<div style="font-size:10px;color:var(--gt);padding:2px 0;">Sin notas aún.</div>'}
+    <div class="nota-add">
+      <input class="nota-inp" id="ni-${id}" placeholder="Escribe una nota..." onkeydown="if(event.key==='Enter'){event.preventDefault();addNota('${id}');}">
+      <label class="nota-img-btn" title="Adjuntar imagen">📎<input type="file" accept="image/*" style="display:none" onchange="addImgNota('${id}',this)"></label>
+      <button class="nota-send" onclick="addNota('${id}')">➤</button>
+    </div>
+  </div>`;
+}
+
+function togNotas(id){
+  const s=document.getElementById('ns-'+id);if(!s)return;
+  const t=tareas[id];if(!t)return;
+  if(s.style.display==='none'||s.innerHTML.trim()===''){
+    s.innerHTML=buildNotasJefe(id,t);
+    s.style.display='block';
+  } else {
+    s.style.display='none';
+  }
+}
+
+async function addNota(id){
+  const inp=document.getElementById('ni-'+id);
+  if(!inp){toast('Error: campo no encontrado','err');return;}
+  const txt=inp.value.trim();
+  if(!txt){toast('Escribe algo en la nota');return;}
+  inp.disabled=true;
+  try{
+    await fbPush(`/tareas/${id}/notas`,{autor:'Byron',txt,ts:ts(),img:null});
+    const updated=await fbGet(`/tareas/${id}`);
+    if(updated) tareas[id]=updated;
+    inp.value='';
+    const s=document.getElementById('ns-'+id);
+    if(s) s.innerHTML=buildNotasJefe(id,tareas[id]);
+    toast('Nota agregada ✓');
+  }catch(e){toast('Error al guardar nota','err');}
+  finally{if(inp)inp.disabled=false;}
+}
+
+async function addImgNota(id,input){
+  const file=input.files[0];if(!file)return;
+  if(pollInterval){clearInterval(pollInterval);pollInterval=null;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const inp=document.getElementById('ni-'+id);
+    const txt=inp?inp.value.trim()||'Imagen adjunta':'Imagen adjunta';
+    try{
+      await fbPush(`/tareas/${id}/notas`,{autor:'Byron',txt,ts:ts(),img:e.target.result});
+      tareas[id]=await fbGet(`/tareas/${id}`);
+      const s=document.getElementById('ns-'+id);
+      if(s&&s.style.display!=='none')s.innerHTML=buildNotasJefe(id,tareas[id]);
+      if(inp)inp.value='';
+      toast('Imagen adjuntada ✓');
+    }catch(err){toast('Error al adjuntar','err');}
+    finally{lastHash='';startListen();}
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===== SOLICITUDES =====
+function renderSolicitudes(){
+  const list=Object.entries(solicitudes).filter(([,s])=>s.status==='pendiente');
+  const containers=['sol-list','mob-sol-list'];
+  containers.forEach(cid=>{
+    const c=document.getElementById(cid);if(!c)return;
+    if(!list.length){c.innerHTML=`<div style="font-size:11px;color:var(--gt);text-align:center;padding:14px;">Sin solicitudes pendientes.</div>`;return;}
+    c.innerHTML=list.map(([id,s])=>{
+      const av=TEAM[s.de]||{bg:'#888',initials:'?'};
+      return `<div class="sol-card ${s.urgente?'urg':''}">
+        <div class="sol-hdr">
+          <div class="sol-de"><div class="mav" style="background:${av.bg};color:white;">${av.initials}</div>${s.de}${s.urgente?'<span style="background:rgba(239,68,68,0.15);color:#F87171;font-size:8px;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:3px;">URGENTE</span>':''}</div>
+          <div class="sol-hora">${s.hora}</div>
+        </div>
+        <div class="sol-txt">${s.txt}</div>
+        <div class="sol-acts">
+          <button class="sb sb-ok" onclick="atenderSol('${id}','Atendido')">✓ Atender</button>
+          <button class="sb sb-sec" onclick="atenderSol('${id}','Escalado')">Escalar</button>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+async function atenderSol(id,resp){
+  await fbUpdate(`/solicitudes/${id}`,{status:'atendida',respuesta:resp});
+  // Keep in local state with updated fields so staff historial shows the response
+  if(solicitudes[id]){
+    solicitudes[id].status='atendida';
+    solicitudes[id].respuesta=resp;
+  }
+  renderSolicitudes();
+  const a=document.getElementById('sol-atendidas');
+  const ma=document.getElementById('mob-atendidas');
+  const de=solicitudes[id]?solicitudes[id].de:'—';
+  const html=`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:5px;padding:6px 8px;margin-bottom:5px;"><div style="font-size:10px;color:var(--ve);font-weight:700;margin-bottom:1px;">✓ ${de} — ${resp}</div></div>`;
+  if(a)a.innerHTML+=html;
+  if(ma)ma.innerHTML+=html;
+  toast('Solicitud atendida ✓');
+}
+
+// ===== FILTERS =====
+function setF(btn,f){
+  filtro=f;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('act','vbf'));
+  if(f==='pendiente-vobo')btn.classList.add('vbf');else btn.classList.add('act');
+  renderTareas();
+}
+
+function selMember(el,m){
+  document.querySelectorAll('.tm').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');miembro=m;
+  const names={todos:'Todas las Tareas',Ricardo:'Ricardo Córbar',Kevin:'Kevin García',William:'William Calel',Mario:'Mario Chacón'};
+  document.getElementById('ctitle').textContent=names[m]||m;
+  updateStats();renderTareas();
+}
+
+// ===== NUEVA TAREA =====
+function openModal(){
+  document.getElementById('f-fecha').value=new Date().toISOString().split('T')[0];
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+
+async function crearTarea(){
+  const tit=document.getElementById('f-tit').value.trim();
+  if(!tit){toast('Escribe un título','err');return;}
+  const t={
+    titulo:tit,
+    desc:document.getElementById('f-desc').value.trim()||'Sin descripción.',
+    asignado:document.getElementById('f-quien').value,
+    prioridad:document.getElementById('f-prior').value,
+    tipo:document.getElementById('f-tipo').value,
+    fecha:document.getElementById('f-fecha').value,
+    status:'activa',
+    hora:document.getElementById('f-hora').value||null,
+    creadaEn:new Date().toISOString(),
+    notas:{}
+  };
+  loading(true);
+  const id=await fbPush('/tareas',t);
+  tareas[id]=t;
+  closeModal();
+  loading(false);
+  document.getElementById('f-tit').value='';
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-hora').value='';
+  filtro='activa';
+  document.querySelectorAll('.fb').forEach((b,i)=>{b.classList.remove('act','vbf');if(i===0)b.classList.add('act');});
+  renderJefe();
+  toast(`Tarea delegada a ${t.asignado} ✓`);
+}
+
+// ===== VO.BO. =====
+function openVobo(id){
+  if(currentUser!=='Byron'){toast('Solo Byron puede dar Vo.Bo.','err');return;}
+  const t=tareas[id];if(!t)return;
+  vboId=id;
+  const av=TEAM[t.asignado];
+  document.getElementById('vb-quien').textContent=`${t.asignado} — ${av?av.role:''}`;
+  document.getElementById('vb-task').textContent=t.titulo;
+  document.getElementById('vb-desc').textContent=t.desc;
+  document.getElementById('vb-tiempo').textContent=t.tiempo?`⏱ ${t.tiempo} ${t.tunit}`:'';
+  const nd=document.getElementById('vb-notas');
+  const notas=t.notas?Object.values(t.notas):[];
+  nd.innerHTML=notas.length?notas.map(n=>`<div class="vb-nota"><span style="color:var(--am);font-weight:700;">${n.autor}:</span> ${n.txt}${n.img?`<br><img src="${n.img}" style="max-width:90px;border-radius:4px;margin-top:3px;cursor:pointer;" onclick="lb('${n.img}')">`:''}</div>`).join(''):'<div style="font-size:9px;color:var(--gt);">Sin notas.</div>';
+  document.getElementById('vb-modal').style.display='flex';
+}
+
+function abrirPrimerVobo(){const id=Object.keys(tareas).find(k=>tareas[k].status==='pendiente-vobo');if(id)openVobo(id);}
+
+async function aprobarVobo(){
+  if(!vboId)return;
+  await fbUpdate(`/tareas/${vboId}`,{status:'completada'});
+  tareas[vboId].status='completada';
+  document.getElementById('vb-modal').style.display='none';
+  vboId=null;renderJefe();toast('¡Vo.Bo. aprobado! ✓');
+}
+
+async function rechazarVobo(){
+  if(!vboId)return;
+  const t=tareas[vboId];
+  await fbUpdate(`/tareas/${vboId}`,{status:'activa'});
+  await fbPush(`/tareas/${vboId}/notas`,{autor:'Byron',txt:'🔴 Vo.Bo. denegado — revisa y vuelve a marcarla.',ts:ts(),img:null});
+  tareas[vboId].status='activa';
+  document.getElementById('vb-modal').style.display='none';
+  const av=TEAM[t.asignado];
+  if(av){const msg=encodeURIComponent(`❌ *Vo.Bo. Denegado*\nHola ${t.asignado}, la tarea "${t.titulo}" fue regresada para revisión. Por favor corrígela y vuelve a marcarla. — Byron`);window.open(`https://wa.me/${av.tel.replace(/\D/g,'')}?text=${msg}`,'_blank');}
+  vboId=null;renderJefe();toast('Regresada al colaborador','warn');
+}
+
+// ===== WA RECORDATORIO =====
+function sendWA(id){
+  const t=tareas[id];if(!t)return;
+  const av=TEAM[t.asignado];if(!av){toast('Sin número');return;}
+  const msg=encodeURIComponent(`🔔 *Recordatorio*\nHola ${t.asignado}:\n📋 *${t.titulo}*\n${t.desc}\n${t.tiempo?'⏱ '+t.tiempo+' '+t.tunit+'\n':''}${t.fecha?'📅 '+fd(t.fecha)+'\n':''}\n— Byron`);
+  window.open(`https://wa.me/${av.tel.replace(/\D/g,'')}?text=${msg}`,'_blank');
+  toast(`Recordatorio enviado a ${t.asignado}`);
+}
+
+// ===== ELIMINAR =====
+async function delTarea(id){
+  const t=tareas[id];if(!t)return;
+  if(!confirm(`¿Eliminar esta tarea?\n\n"${t.titulo}"\n\nEsta acción no se puede deshacer.`))return;
+  await fbDelete(`/tareas/${id}`);
+  delete tareas[id];
+  renderJefe();toast('Tarea eliminada');
+}
+
+// ===== REASIGNAR =====
+function openRe(id){
+  reId=id;reNewUser=null;
+  const t=tareas[id];if(!t)return;
+  document.getElementById('re-task').textContent=t.titulo+' (actual: '+t.asignado+')';
+  document.querySelectorAll('.re-btn').forEach(b=>b.classList.remove('sel'));
+  const cur=document.getElementById('rb-'+t.asignado);
+  if(cur){cur.classList.add('sel');reNewUser=t.asignado;}
+  document.getElementById('re-modal').style.display='flex';
+}
+function selRe(n){reNewUser=n;document.querySelectorAll('.re-btn').forEach(b=>b.classList.remove('sel'));const el=document.getElementById('rb-'+n);if(el)el.classList.add('sel');}
+function closeRe(){document.getElementById('re-modal').style.display='none';reId=null;reNewUser=null;}
+async function confirmarRe(){
+  if(!reId||!reNewUser){toast('Selecciona a quién reasignar','warn');return;}
+  const t=tareas[reId];if(!t)return;
+  const prev=t.asignado;
+  if(prev===reNewUser){closeRe();return;}
+  await fbUpdate(`/tareas/${reId}`,{asignado:reNewUser,status:'activa'});
+  await fbPush(`/tareas/${reId}/notas`,{autor:'Byron',txt:`🔄 Reasignada de ${prev} a ${reNewUser}.`,ts:ts(),img:null});
+  tareas[reId].asignado=reNewUser;tareas[reId].status='activa';
+  closeRe();renderJefe();toast(`Reasignada a ${reNewUser} ✓`);
+}
+
+// ===== MOBILE NAV =====
+let mobAct='t';
+function mobNav(tab){
+  mobAct=tab;
+  document.querySelectorAll('.mob-tab').forEach(t=>t.classList.remove('act'));
+  const bt=document.getElementById('mobt-'+tab);if(bt)bt.classList.add('act');
+  document.getElementById('mob-equipo').classList.remove('show');
+  document.getElementById('mob-solic').classList.remove('show');
+  const pc=document.getElementById('pcenter');
+  if(tab==='t'){if(pc)pc.style.visibility='visible';}
+  else if(tab==='e'){if(pc)pc.style.visibility='hidden';renderMobEquipo();document.getElementById('mob-equipo').classList.add('show');}
+  else if(tab==='s'){if(pc)pc.style.visibility='hidden';renderSolicitudes();document.getElementById('mob-solic').classList.add('show');}
+  else if(tab==='n'){if(pc)pc.style.visibility='visible';openModal();}
+}
+
+function renderMobEquipo(){
+  const c=document.getElementById('mob-equipo-inner');if(!c)return;
+  c.innerHTML='<div class="sec-title" style="padding:0 0 8px;">Equipo</div>'+
+  ['todos',...Object.keys(TEAM)].map(n=>{
+    const av=TEAM[n]||{bg:'var(--am)',initials:'★'};
+    const isAll=n==='todos';
+    const s=calcStats(n);
+    return `<div class="tm ${miembro===n?'sel':''}" onclick="mobSelMember('${n}')">
+      <div class="av" style="background:${isAll?'var(--am)':av.bg};color:${isAll?'var(--neg)':'white'};">${isAll?'★':av.initials}</div>
+      <div class="mi">
+        <div class="mn">${isAll?'Todos':n+(TEAM[n]?{Ricardo:' Córbar',Kevin:' García',William:' Calel',Mario:' Chacón'}[n]:'')}</div>
+        ${!isAll?`<div class="mr">${av.role}</div><div class="mt">${av.tel}</div>`:''}
+        <div class="ms"><span class="ms-a">${s.a} proc.</span>${s.v>0?`<span class="ms-v">${s.v} Vo.Bo.</span>`:''}<span class="ms-d">${s.d}✓</span><span class="ms-p">${s.pct}%</span></div>
+        ${!isAll?`<div class="pbar"><div class="pfill" style="width:${s.pct}%;background:${s.pct>=80?'var(--ve)':s.pct>=50?'var(--na)':'var(--ro)'};"></div></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function mobSelMember(m){
+  miembro=m;
+  const names={todos:'Todas las Tareas',Ricardo:'Ricardo Córbar',Kevin:'Kevin García',William:'William Calel',Mario:'Mario Chacón'};
+  document.getElementById('ctitle').textContent=names[m]||m;
+  renderTareas();updateStats();
+  mobNav('t');
+}
+
+// ===== STAFF VIEW =====
+function renderStaffHeader(){
+  const u=currentUser,p=TEAM[u];
+  document.getElementById('sname').textContent=u+' '+({Ricardo:'Córbar',Kevin:'García',William:'Calel',Mario:'Chacón'}[u]||'');
+  document.getElementById('srole').textContent=p?p.role:'';
+  document.getElementById('stel').textContent=p?p.tel:'';
+  const sa=document.getElementById('sav');sa.textContent=p?p.initials:'?';sa.style.background=p?p.bg:'#888';
+}
+
+function staffTab(tab){
+  staffTab_=tab;
+  document.querySelectorAll('.staff-tab').forEach(t=>t.classList.remove('act'));
+  document.getElementById('stb-'+tab).classList.add('act');
+  document.getElementById('staff-tareas').style.display='none';
+  document.getElementById('staff-done').style.display='none';
+  document.getElementById('staff-sol').style.display='none';
+  if(tab==='p'){document.getElementById('staff-tareas').style.display='block';renderStaffTareas();}
+  else if(tab==='d'){document.getElementById('staff-done').style.display='block';renderStaffDone();}
+  else{document.getElementById('staff-sol').style.display='block';renderStaffSolicitudes();}
+}
+
+function renderStaffView(){
+  const s=calcStats(currentUser);
+  const sp=document.getElementById('spct');if(sp)sp.textContent=s.pct+'%';
+  staffTab(staffTab_);
+}
+
+function renderStaffSolicitudes(){
+  const c=document.getElementById('staff-sol-historial');if(!c)return;
+  const mias=Object.entries(solicitudes)
+    .filter(([,s])=>s.de===currentUser)
+    // Sort by creadaEn if available, else hora string — newest first
+    .sort((a,b)=>{
+      const ta=a[1].creadaEn||a[1].hora||'';
+      const tb=b[1].creadaEn||b[1].hora||'';
+      return tb.localeCompare(ta);
+    });
+  if(!mias.length){
+    c.innerHTML=`<div style="font-size:12px;color:var(--gt);text-align:center;padding:12px;">Sin solicitudes enviadas aún.</div>`;
+    return;
+  }
+  c.innerHTML=mias.map(([id,s])=>{
+    const isPending=s.status==='pendiente';
+    const borderColor=s.urgente?'var(--ro)':isPending?'var(--gb)':'var(--ve)';
+    const statusBadge=isPending
+      ?`<span style="background:rgba(249,115,22,0.15);color:#FB923C;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;">⏳ Pendiente</span>`
+      :`<span style="background:rgba(34,197,94,0.15);color:var(--ve);font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;">✓ Atendida</span>`;
+    return `<div style="background:var(--go);border:1px solid ${borderColor};border-radius:8px;padding:11px 13px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;">
+        <div style="font-size:12px;font-weight:600;color:var(--bl);">${s.urgente?'🔴 ':''}${s.txt}</div>
+        ${statusBadge}
+      </div>
+      <div style="font-size:11px;color:var(--gt);margin-bottom:${s.respuesta?'6px':'0'};">📤 Enviada ${s.hora||''}</div>
+      ${s.respuesta?`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:5px;padding:7px 10px;">
+        <div style="font-size:10px;color:var(--ve);font-weight:700;margin-bottom:2px;">✓ Respuesta de Byron:</div>
+        <div style="font-size:12px;color:var(--bl);">${s.respuesta}</div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderStaffTareas(){
+  // Show activa AND pendiente-vobo — never hide pending approval
+  const mine=Object.entries(tareas).filter(([,t])=>t.asignado===currentUser&&t.status!=='completada'&&t.status!=='archivada');
+  const c=document.getElementById('staff-tareas');if(!c)return;
+  if(!mine.length){c.innerHTML=`<div style="text-align:center;color:var(--gt);padding:20px;font-size:13px;">¡Sin tareas activas! 🎉</div>`;return;}
+  c.innerHTML=mine.map(([id,t])=>{
+    const colB=t.prioridad==='alta'?'var(--ro)':t.prioridad==='media'?'var(--na)':'var(--ve)';
+    let badge='',action='';
+    if(t.status==='activa'){
+      badge=`<span style="background:rgba(59,130,246,0.15);color:#60A5FA;font-size:10px;padding:3px 7px;border-radius:4px;font-weight:700;">EN PROCESO</span>`;
+      action=`<button style="background:rgba(34,197,94,0.15);color:var(--ve);border:1px solid rgba(34,197,94,0.3);padding:7px 12px;border-radius:5px;font-size:12px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="staffMarcar('${id}')">✓ Marcar completada</button>`;
+    } else {
+      badge=`<span style="background:rgba(249,115,22,0.25);color:#FB923C;font-size:10px;padding:3px 7px;border-radius:4px;font-weight:700;">⏳ PEND. VO.BO.</span>`;
+      action=`<div style="font-size:11px;color:var(--na);margin-top:6px;padding:7px 10px;background:rgba(249,115,22,0.08);border-radius:5px;border:1px solid rgba(249,115,22,0.25);">⏳ Enviada a Byron — esperando visto bueno...<br><button onclick="staffWaRecordatorio('${id}')" style="margin-top:5px;background:rgba(37,211,102,0.15);color:#25D366;border:1px solid rgba(37,211,102,0.3);padding:4px 9px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">📲 Recordar a Byron por WA</button></div>`;
+    }
+    const notas=t.notas?Object.values(t.notas):[];
+    const nh=notas.map(n=>`<div style="background:rgba(253,236,3,0.05);border:1px solid rgba(253,236,3,0.12);border-radius:4px;padding:4px 8px;margin-bottom:3px;font-size:11px;"><span style="color:var(--am);font-weight:700;">${n.autor}</span> · ${n.ts} — ${n.txt}${n.img?`<br><img src="${n.img}" style="max-width:70px;border-radius:3px;margin-top:3px;cursor:pointer;" onclick="lb('${n.img}')">`:''}</div>`).join('');
+    const p=TEAM[currentUser]||{bg:'#888'};
+    return `<div style="border:2px solid ${colB};border-radius:10px;margin-bottom:14px;overflow:hidden;background:var(--go);box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+
+      <!-- HEADER -->
+      <div style="background:rgba(255,255,255,0.04);border-bottom:1px solid var(--gb);padding:10px 13px;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+          <div style="width:34px;height:34px;border-radius:50%;background:${p.bg};color:white;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px;flex-shrink:0;">${p.initials||'?'}</div>
+          <div>
+            <div style="font-size:14px;font-weight:900;color:${p.bg};line-height:1.1;">${currentUser}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--am);margin-top:1px;text-transform:uppercase;letter-spacing:0.5px;">${t.tipo}</div>
+          </div>
+        </div>
+        ${badge}
+      </div>
+
+      <!-- BODY -->
+      <div style="padding:12px 13px;">
+        <div style="font-size:15px;font-weight:700;color:var(--bl);line-height:1.4;margin-bottom:7px;">${t.titulo}</div>
+        <div style="font-size:13px;color:var(--gt);line-height:1.6;margin-bottom:7px;">${t.desc}</div>
+        ${t.hora?`<div style="font-size:12px;color:var(--mo);font-family:'JetBrains Mono',monospace;background:rgba(139,92,246,0.08);padding:5px 9px;border-radius:5px;display:inline-block;margin-bottom:8px;">🕐 Entregar ${fd(t.fecha)} a las ${t.hora} hrs.</div>`:''}
+        ${nh?`<div style="margin-bottom:8px;">${nh}</div>`:''}
+        <div style="font-size:12px;color:var(--gt);margin-bottom:10px;">📅 ${fd(t.fecha)}</div>
+        ${t.status==='pendiente-vobo'?action:''}
+        <div id="snf-${id}" style="display:none;margin-top:8px;">
+          <div style="display:flex;gap:5px;">
+            <input id="sni-${id}" style="flex:1;background:var(--neg);border:1px solid var(--gb);color:var(--bl);padding:7px 9px;border-radius:5px;font-size:13px;font-family:Inter,sans-serif;outline:none;" placeholder="Escribe nota o avance..." onkeydown="if(event.key==='Enter'){staffSendNota('${id}');}">
+            <label style="background:var(--gb);border:none;color:var(--gt);padding:7px 9px;border-radius:5px;cursor:pointer;font-size:14px;">📎<input type="file" accept="image/*" style="display:none" onchange="staffImg('${id}',this)"></label>
+            <button style="background:var(--am);border:none;color:var(--neg);padding:7px 11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;" onclick="staffSendNota('${id}')">➤</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div style="border-top:1px solid var(--gb);padding:8px 13px;display:flex;gap:7px;flex-wrap:wrap;justify-content:space-between;align-items:center;">
+        <button style="background:rgba(253,236,3,0.08);color:var(--am);border:1px solid rgba(253,236,3,0.2);padding:6px 11px;border-radius:5px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;" onclick="togStaffNota('${id}')">📝 Agregar nota</button>
+        ${t.status==='activa'?action:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStaffDone(){
+  const mine=Object.entries(tareas).filter(([,t])=>t.asignado===currentUser&&(t.status==='completada'||t.status==='archivada'));
+  const c=document.getElementById('staff-done');if(!c)return;
+  if(!mine.length){c.innerHTML=`<div style="text-align:center;color:var(--gt);padding:20px;font-size:13px;">Aún no hay completadas.</div>`;return;}
+  const completadas=mine.filter(([,t])=>t.status==='completada');
+  const archivadas=mine.filter(([,t])=>t.status==='archivada');
+  let html='';
+
+  // Completadas activas (verdes, con botón archivar)
+  html+=completadas.map(([id,t])=>`
+    <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.3);border-radius:7px;padding:11px 13px;margin-bottom:8px;border-left:4px solid var(--ve);">
+      <div style="font-size:13px;font-weight:700;color:var(--ve);margin-bottom:3px;">${t.titulo}</div>
+      <div style="font-size:11px;color:var(--gt);margin-bottom:6px;">✅ Aprobada por Byron · 📅 ${fd(t.fecha)}</div>
+      <button onclick="archivarTarea('${id}')" style="background:var(--gb);color:var(--gt);border:none;padding:5px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;">📦 Archivar</button>
+    </div>`).join('');
+
+  // Archivadas — colapsables con botón para expandir
+  if(archivadas.length){
+    html+=`
+    <div style="margin-top:6px;">
+      <button onclick="toggleArchivadas()" style="width:100%;background:var(--go);border:1px solid var(--gb);color:var(--gt);padding:9px 13px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:Inter,sans-serif;display:flex;align-items:center;justify-content:space-between;text-align:left;">
+        <span>📦 Tareas archivadas (${archivadas.length})</span>
+        <span id="arch-arrow" style="font-size:14px;">▼</span>
+      </button>
+      <div id="arch-list" style="display:none;margin-top:6px;">
+        ${archivadas.map(([id,t])=>`
+        <div style="background:var(--go);border:1px solid var(--gb);border-radius:7px;padding:10px 13px;margin-bottom:6px;opacity:0.8;">
+          <div style="font-size:13px;font-weight:600;color:var(--gt);text-decoration:line-through;margin-bottom:4px;">${t.titulo}</div>
+          <div style="font-size:11px;color:var(--gt);margin-bottom:7px;">📅 ${fd(t.fecha)}</div>
+          <button onclick="desarchivarTarea('${id}')" style="background:rgba(59,130,246,0.12);color:#60A5FA;border:1px solid rgba(59,130,246,0.25);padding:5px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;">↩ Desarchivar</button>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  c.innerHTML=html||`<div style="text-align:center;color:var(--gt);padding:20px;font-size:13px;">Sin completadas.</div>`;
+}
+
+function toggleArchivadas(){
+  const list=document.getElementById('arch-list');
+  const arrow=document.getElementById('arch-arrow');
+  if(!list)return;
+  const open=list.style.display==='none';
+  list.style.display=open?'block':'none';
+  if(arrow)arrow.textContent=open?'▲':'▼';
+}
+
+async function archivarTarea(id){
+  await fbUpdate(`/tareas/${id}`,{status:'archivada'});
+  if(tareas[id])tareas[id].status='archivada';
+  renderStaffDone();toast('Tarea archivada 📦');
+}
+
+async function desarchivarTarea(id){
+  await fbUpdate(`/tareas/${id}`,{status:'completada'});
+  if(tareas[id])tareas[id].status='completada';
+  renderStaffDone();toast('Tarea desarchivada ✓');
+}
+
+function togStaffNota(id){const f=document.getElementById('snf-'+id);if(f)f.style.display=f.style.display==='none'?'block':'none';}
+
+async function staffSendNota(id){
+  const inp=document.getElementById('sni-'+id);if(!inp)return;
+  const txt=inp.value.trim();if(!txt){toast('Escribe algo');return;}
+  await fbPush(`/tareas/${id}/notas`,{autor:currentUser,txt,ts:ts(),img:null});
+  inp.value='';renderStaffTareas();toast('Nota enviada ✓');
+}
+
+async function staffImg(id,input){
+  const file=input.files[0];if(!file)return;
+  if(pollInterval){clearInterval(pollInterval);pollInterval=null;}
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const inp=document.getElementById('sni-'+id);
+    const txt=inp?inp.value.trim()||'Imagen adjunta':'Imagen adjunta';
+    await fbPush(`/tareas/${id}/notas`,{autor:currentUser,txt,ts:ts(),img:e.target.result});
+    if(inp)inp.value='';renderStaffTareas();toast('Imagen adjuntada ✓');
+  };
+  reader.readAsDataURL(file);
+  // If paused, reader.onload will resume via finally in addImgNota pattern
+  // We need to resume here after readAsDataURL triggers onload
+  setTimeout(()=>{if(!pollInterval){lastHash='';startListen();}},2000);
+}
+
+async function staffMarcar(id){
+  await fbUpdate(`/tareas/${id}`,{status:'pendiente-vobo'});
+  tareas[id].status='pendiente-vobo';
+  const msg=encodeURIComponent(`⏳ *Tarea lista para Vo.Bo.*\nDe: ${currentUser}\nTarea: "${tareas[id].titulo}"\n\nPor favor revisa y da el visto bueno. — Centro de Mando`);
+  window.open(`https://wa.me/${BYRON_WA}?text=${msg}`,'_blank');
+  renderStaffView();toast('Notificado a Byron para Vo.Bo. ✓');
+}
+
+function staffWaRecordatorio(id){
+  const t=tareas[id];if(!t)return;
+  const msg=encodeURIComponent(`⏳ *Recordatorio Vo.Bo.*\nHola Byron, sigo esperando tu visto bueno para la tarea:\n\n📋 "${t.titulo}"\n\n¿Puedes revisarla? — ${currentUser}`);
+  window.open(`https://wa.me/${BYRON_WA}?text=${msg}`,'_blank');
+  toast('Recordatorio enviado a Byron ✓');
+}
+
+async function enviarSol(){
+  const txt=document.getElementById('ss-txt').value.trim();if(!txt){toast('Escribe tu solicitud');return;}
+  const urg=document.getElementById('ss-urg').value.includes('Urgente');
+  const waChk=document.getElementById('ss-wa');
+  const waOpt=waChk?waChk.checked:false;
+  const id=await fbPush('/solicitudes',{de:currentUser,txt,hora:ts(),creadaEn:new Date().toISOString(),urgente:urg,status:'pendiente',respuesta:null});
+  solicitudes[id]={de:currentUser,txt,hora:ts(),creadaEn:new Date().toISOString(),urgente:urg,status:'pendiente',respuesta:null};
+  document.getElementById('ss-txt').value='';
+  renderStaffSolicitudes(); // update historial immediately
+  toast('Solicitud enviada — Byron la verá en la app ✓');
+  if(waOpt){
+    const msg=encodeURIComponent(`📨 *Solicitud al Jefe*\nDe: ${currentUser}\n${urg?'🔴 URGENTE\n':''}\n"${txt}"\n— Centro de Mando`);
+    window.open(`https://wa.me/${BYRON_WA}?text=${msg}`,'_blank');
+  }
+}
+
+// Archivar desde vista jefe
+async function archivarJefe(id){
+  await fbUpdate(`/tareas/${id}`,{status:'archivada'});
+  if(tareas[id])tareas[id].status='archivada';
+  renderJefe();toast('Tarea archivada 📦');
+}
+
+async function desarchivarJefe(id){
+  await fbUpdate(`/tareas/${id}`,{status:'completada'});
+  if(tareas[id])tareas[id].status='completada';
+  renderJefe();toast('Tarea desarchivada ✓');
+}
+
+// ===== CLOCK =====
+function startClock(){
+  const el=document.getElementById('clk');if(!el)return;
+  const tick=()=>{
+    const n=new Date();
+    el.textContent=n.toLocaleDateString('es-GT',{weekday:'short',day:'2-digit',month:'short'})+' '+
+      n.toLocaleTimeString('es-GT',{hour:'2-digit',minute:'2-digit'});
+  };
+  tick();setInterval(tick,30000);
+}
+</script>
+</body>
+</html>
