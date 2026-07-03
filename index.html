@@ -1538,9 +1538,9 @@ function renderStaffTareas(){
       </div>
 
       <!-- FOOTER -->
-      <div style="border-top:1px solid var(--gb);padding:8px 13px;display:flex;gap:7px;flex-wrap:wrap;justify-content:space-between;align-items:center;">
-        <button style="background:rgba(253,236,3,0.08);color:var(--am);border:1px solid rgba(253,236,3,0.2);padding:6px 11px;border-radius:5px;font-size:12px;cursor:pointer;font-family:Inter,sans-serif;font-weight:600;" onclick="togStaffNota('${id}')">📝 Agregar nota</button>
-        ${t.status==='activa'?action:''}
+      <div style="border-top:1px solid var(--gb);padding:10px 13px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button style="background:rgba(253,236,3,0.08);color:var(--am);border:2px solid rgba(253,236,3,0.3);padding:12px 8px;border-radius:8px;font-size:13px;cursor:pointer;font-family:Inter,sans-serif;font-weight:700;text-align:center;" onclick="togStaffNota('${id}')">📝<br><span style="font-size:11px;">Agregar nota</span></button>
+        ${t.status==='activa'?`<button style="background:rgba(34,197,94,0.2);color:var(--ve);border:2px solid rgba(34,197,94,0.4);padding:12px 8px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;text-align:center;" onclick="staffMarcar('${id}')">✓<br><span style="font-size:11px;">Marcar completada</span></button>`:'<div></div>'}
       </div>
     </div>`;
   }).join('');
