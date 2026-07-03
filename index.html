@@ -884,7 +884,7 @@ async function loadAndRender(){
 
 // ===== STATS =====
 function calcStats(n){
-  const list=Object.values(tareas).filter(t=>n==='todos'||t.asignado===n);
+  const list=Object.values(tareas).filter(t=>(n==='todos'||t.asignado===n)&&t.status!=='archivada');
   const a=list.filter(t=>t.status==='activa').length;
   const v=list.filter(t=>t.status==='pendiente-vobo').length;
   const d=list.filter(t=>t.status==='completada').length;
