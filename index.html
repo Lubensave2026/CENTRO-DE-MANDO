@@ -147,6 +147,19 @@
   .nota-inp:focus{border-color:var(--am);}
   .nota-img-btn{background:var(--gb);border:none;color:var(--gt);padding:5px 7px;border-radius:4px;cursor:pointer;font-size:11px;}
   .nota-send{background:var(--am);border:none;color:var(--neg);padding:5px 8px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;}
+  .nota-contact-btn{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:#60A5FA;padding:5px 8px;border-radius:4px;font-size:11px;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .nota-contact-btn:hover{background:rgba(59,130,246,0.25);}
+  /* Tarjeta de contacto en el chat */
+  .contact-card{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:8px;padding:10px 12px;margin-top:5px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;}
+  .contact-avatar{width:36px;height:36px;border-radius:50%;background:#3B82F6;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;}
+  .contact-info{flex:1;min-width:0;}
+  .contact-name{font-size:13px;font-weight:700;color:var(--bl);}
+  .contact-tel{font-size:11px;color:#60A5FA;font-family:'JetBrains Mono',monospace;}
+  .contact-actions{display:flex;gap:5px;}
+  .ca-call{background:rgba(34,197,94,0.15);color:var(--ve);border:1px solid rgba(34,197,94,0.3);padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;display:inline-flex;align-items:center;gap:3px;}
+  .ca-wa{background:#25D366;color:white;border:none;padding:5px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;text-decoration:none;display:inline-flex;align-items:center;gap:3px;}
+  /* Modal contacto */
+  .contact-modal{background:var(--gp);border:1px solid var(--gb);border-radius:10px;width:100%;max-width:380px;padding:22px;}
 
   /* SOLICITUDES */
   .sol-card{margin:0 10px 8px;background:var(--go);border:1px solid var(--gb);border-radius:7px;padding:10px 11px;}
@@ -574,6 +587,32 @@
   </div>
 </div>
 
+<!-- MODAL CONTACTO -->
+<div class="overlay" id="contact-modal" style="display:none;" onclick="if(event.target.id==='contact-modal')closeContactModal()">
+  <div class="contact-modal">
+    <div class="modal-title" style="font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+      👤 Adjuntar Contacto
+      <button class="mc" onclick="closeContactModal()">✕</button>
+    </div>
+    <div class="fg">
+      <label class="fl">Nombre *</label>
+      <input class="fi" id="ct-nombre" placeholder="Ej: Juan Pérez — Proveedor" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label class="fl">Teléfono / WhatsApp *</label>
+      <input class="fi" id="ct-tel" placeholder="+502 5555 1234" type="tel" autocomplete="off">
+    </div>
+    <div class="fg">
+      <label class="fl">Nota opcional</label>
+      <input class="fi" id="ct-nota" placeholder="Ej: Proveedor de frenos, preguntar por Mario">
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn-c" onclick="closeContactModal()">Cancelar</button>
+      <button class="btn-p" onclick="addContactNote()">Adjuntar ▶</button>
+    </div>
+  </div>
+</div>
+
 <div class="lightbox" id="lightbox" style="display:none;">
   <!-- Botón cerrar -->
   <button onclick="closeLightbox()" style="position:fixed;top:16px;right:16px;background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.3);color:white;width:48px;height:48px;border-radius:50%;font-size:24px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center;">✕</button>
@@ -810,6 +849,49 @@ function ts(){return new Date().toLocaleTimeString('es-GT',{hour:'2-digit',minut
 function fd(s){if(!s)return'';return new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'});}
 function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'')+' show';setTimeout(()=>t.className='toast',3000);}
 function loading(show){document.getElementById('loading').style.display=show?'flex':'none';}
+// ===== CONTACTOS EN CHAT =====
+let contactTaskId = null;
+
+function openContactModal(id){
+  contactTaskId = id;
+  document.getElementById('ct-nombre').value = '';
+  document.getElementById('ct-tel').value = '';
+  document.getElementById('ct-nota').value = '';
+  document.getElementById('contact-modal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('ct-nombre').focus(), 100);
+}
+
+function closeContactModal(){
+  document.getElementById('contact-modal').style.display = 'none';
+  contactTaskId = null;
+}
+
+async function addContactNote(){
+  const nombre = document.getElementById('ct-nombre').value.trim();
+  const tel    = document.getElementById('ct-tel').value.trim();
+  const nota   = document.getElementById('ct-nota').value.trim();
+  if(!nombre || !tel){ toast('Nombre y teléfono son obligatorios','warn'); return; }
+  const id = contactTaskId; if(!id) return;
+  // Limpiar teléfono para los links
+  const telClean = tel.replace(/\s/g,'');
+  const payload = {
+    autor: 'Byron',
+    txt: `Contacto: ${nombre} · ${tel}`,
+    ts: ts(),
+    img: null,
+    contact: { nombre, tel: telClean, nota }
+  };
+  closeContactModal();
+  try{
+    await fbPush(`/tareas/${id}/notas`, payload);
+    const updated = await fbGet(`/tareas/${id}`);
+    if(updated) tareas[id] = updated;
+    const s = document.getElementById('ns-'+id);
+    if(s) s.innerHTML = buildNotasJefe(id, tareas[id]);
+    toast('Contacto adjuntado ✓');
+  }catch(e){ toast('Error al adjuntar contacto','err'); }
+}
+
 // ===== LIGHTBOX CON PINCH TO ZOOM =====
 (function(){
   let scale=1, startDist=0, startScale=1;
@@ -1265,12 +1347,33 @@ function buildCard(id,t,hoy){
 
 function buildNotasJefe(id,t){
   const notas=t.notas?Object.values(t.notas):[];
-  const items=notas.map(n=>`<div class="nota-item"><span style="color:var(--gt);font-size:9px;">${n.autor}·${n.ts} — </span>${n.txt}${n.img?`<br><img src="${n.img}" class="nota-img" onclick="lb('${n.img}')" title="Tocar para ampliar">`:''}</div>`).join('');
+  const items=notas.map(n=>{
+    const telClean=n.contact?n.contact.tel.replace(/\D/g,''):'';
+    return `<div class="nota-item">
+      <span style="color:var(--gt);font-size:9px;">${n.autor}·${n.ts} — </span>
+      ${n.contact?`
+        <div class="contact-card">
+          <div class="contact-avatar">${n.contact.nombre.charAt(0).toUpperCase()}</div>
+          <div class="contact-info">
+            <div class="contact-name">${n.contact.nombre}</div>
+            <div class="contact-tel">${n.contact.tel}</div>
+            ${n.contact.nota?`<div style="font-size:11px;color:var(--gt);margin-top:2px;">${n.contact.nota}</div>`:''}
+          </div>
+          <div class="contact-actions">
+            <a href="tel:${telClean}" class="ca-call">📞 Llamar</a>
+            <a href="https://wa.me/${telClean}" target="_blank" class="ca-wa">💬 WA</a>
+          </div>
+        </div>
+      `:n.txt}
+      ${n.img?`<br><img src="${n.img}" class="nota-img" onclick="lb('${n.img}')" title="Tocar para ampliar">`:''}
+    </div>`;
+  }).join('');
   return `<div class="nota-wrap">
     ${items||'<div style="font-size:10px;color:var(--gt);padding:2px 0;">Sin notas aún.</div>'}
     <div class="nota-add">
       <input class="nota-inp" id="ni-${id}" placeholder="Escribe una nota..." onkeydown="if(event.key==='Enter'){event.preventDefault();addNota('${id}');}">
       <label class="nota-img-btn" title="Adjuntar imagen">📎<input type="file" accept="image/*" style="display:none" onchange="addImgNota('${id}',this)"></label>
+      <button class="nota-contact-btn" onclick="openContactModal('${id}')" title="Adjuntar contacto">👤</button>
       <button class="nota-send" onclick="addNota('${id}')">➤</button>
     </div>
   </div>`;
@@ -1683,7 +1786,28 @@ function renderStaffTareas(){
       action=`<div style="font-size:11px;color:var(--na);margin-top:6px;padding:7px 10px;background:rgba(249,115,22,0.08);border-radius:5px;border:1px solid rgba(249,115,22,0.25);">⏳ Enviada a Byron — esperando visto bueno...<br><button onclick="staffWaRecordatorio('${id}')" style="margin-top:5px;background:rgba(37,211,102,0.15);color:#25D366;border:1px solid rgba(37,211,102,0.3);padding:4px 9px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;font-family:Inter,sans-serif;">📲 Recordar a Byron por WA</button></div>`;
     }
     const notas=t.notas?Object.values(t.notas):[];
-    const nh=notas.map(n=>`<div style="background:rgba(253,236,3,0.05);border:1px solid rgba(253,236,3,0.12);border-radius:4px;padding:4px 8px;margin-bottom:3px;font-size:11px;"><span style="color:var(--am);font-weight:700;">${n.autor}</span> · ${n.ts} — ${n.txt}${n.img?`<br><img src="${n.img}" style="width:100px;height:100px;object-fit:cover;border-radius:6px;margin-top:5px;cursor:pointer;border:2px solid var(--gb);" onclick="lb('${n.img}')">`:''}</div>`).join('');
+    const nh=notas.map(n=>{
+      const tc=n.contact;
+      const telC=tc?tc.tel.replace(/\D/g,''):'';
+      return `<div style="background:rgba(253,236,3,0.05);border:1px solid rgba(253,236,3,0.12);border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:11px;">
+        <span style="color:var(--am);font-weight:700;">${n.autor}</span> · ${n.ts}
+        ${tc?`
+          <div class="contact-card" style="margin-top:6px;">
+            <div class="contact-avatar">${tc.nombre.charAt(0).toUpperCase()}</div>
+            <div class="contact-info">
+              <div class="contact-name">${tc.nombre}</div>
+              <div class="contact-tel">${tc.tel}</div>
+              ${tc.nota?`<div style="font-size:11px;color:var(--gt);">${tc.nota}</div>`:''}
+            </div>
+            <div class="contact-actions">
+              <a href="tel:${telC}" class="ca-call">📞</a>
+              <a href="https://wa.me/${telC}" target="_blank" class="ca-wa">💬</a>
+            </div>
+          </div>
+        `:` — ${n.txt}`}
+        ${n.img?`<br><img src="${n.img}" style="width:100px;height:100px;object-fit:cover;border-radius:6px;margin-top:5px;cursor:pointer;border:2px solid var(--gb);" onclick="lb('${n.img}')">`:'' }
+      </div>`;
+    }).join('');
     const p=TEAM[currentUser]||{bg:'#888'};
     return `<div style="border:2px solid ${colB};border-radius:10px;margin-bottom:14px;overflow:hidden;background:var(--go);box-shadow:0 2px 8px rgba(0,0,0,0.3);">
 
