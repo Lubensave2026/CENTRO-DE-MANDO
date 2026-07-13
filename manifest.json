@@ -1,0 +1,31 @@
+{
+  "name": "Centro de Mando — Lube N Save",
+  "short_name": "Centro de Mando",
+  "description": "Herramienta oficial del equipo administrativo de Lube N Save Zona 10",
+  "start_url": "/CENTRO-DE-MANDO/",
+  "scope": "/CENTRO-DE-MANDO/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#FDEC03",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
