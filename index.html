@@ -860,6 +860,86 @@ function ts(){return new Date().toLocaleTimeString('es-GT',{hour:'2-digit',minut
 function fd(s){if(!s)return'';return new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'});}
 function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'')+' show';setTimeout(()=>t.className='toast',3000);}
 function loading(show){document.getElementById('loading').style.display=show?'flex':'none';}
+// ===== EDITAR TAREA =====
+let editId = null;
+
+function openEditModal(id){
+  const t = tareas[id]; if(!t) return;
+  editId = id;
+  // Label descriptivo
+  document.getElementById('edit-task-label').textContent = t.titulo;
+  // Pre-cargar valores actuales
+  document.getElementById('ed-titulo').value = t.titulo || '';
+  document.getElementById('ed-desc').value   = t.desc   || '';
+  document.getElementById('ed-fecha').value  = t.fecha  || '';
+  document.getElementById('ed-hora').value   = t.hora   || '';
+  document.getElementById('ed-razon').value  = '';
+  // Prioridad y tipo
+  const priorSel = document.getElementById('ed-prior');
+  const tipoSel  = document.getElementById('ed-tipo');
+  if(priorSel) priorSel.value = t.prioridad || 'media';
+  if(tipoSel)  tipoSel.value  = t.tipo      || 'Administrativo';
+  document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal(){
+  document.getElementById('edit-modal').style.display = 'none';
+  editId = null;
+}
+
+async function guardarEdicion(){
+  if(!editId) return;
+  const t = tareas[editId];
+  const titulo  = document.getElementById('ed-titulo').value.trim();
+  const desc    = document.getElementById('ed-desc').value.trim();
+  const fecha   = document.getElementById('ed-fecha').value;
+  const hora    = document.getElementById('ed-hora').value;
+  const prior   = document.getElementById('ed-prior').value;
+  const tipo    = document.getElementById('ed-tipo').value;
+  const razon   = document.getElementById('ed-razon').value.trim();
+
+  if(!titulo){ toast('El título no puede estar vacío','warn'); return; }
+
+  const updates = { titulo, desc, fecha, hora, prioridad:prior, tipo };
+  
+  try{
+    await fbUpdate(`/tareas/${editId}`, updates);
+    // Actualizar local
+    Object.assign(tareas[editId], updates);
+
+    // Agregar nota automática con la razón si la pusieron
+    if(razon){
+      const nota = {
+        autor:'Byron',
+        txt:`✎ Tarea actualizada — ${razon}${fecha&&fecha!==t.fecha?' · Nueva fecha: '+fd(fecha):''}${hora&&hora!==t.hora?' · Nueva hora: '+hora+' hrs.':''}`,
+        ts:ts(), img:null
+      };
+      await fbPush(`/tareas/${editId}/notas`, nota);
+      const updated = await fbGet(`/tareas/${editId}`);
+      if(updated) tareas[editId] = updated;
+    }
+
+    closeEditModal();
+    renderTareas();
+    toast('Tarea actualizada ✓');
+
+    // Avisar al colaborador si cambió fecha u hora
+    if((fecha && fecha !== t.fecha) || (hora && hora !== t.hora)){
+      const av = TEAM[t.asignado];
+      if(av){
+        const tel = av.tel.replace(/\D/g,'');
+        const msg = encodeURIComponent(
+          `📅 *Actualización de tarea*\nHola ${t.asignado}, se modificó el plazo de tu tarea:\n\n📋 "${titulo}"\n` +
+          `${fecha?'📅 Nueva fecha: '+fd(fecha)+'\n':''}` +
+          `${hora?'🕐 Nueva hora: '+hora+' hrs.\n':''}` +
+          `${razon?'\nMotivo: '+razon:''}\n\n— Byron`
+        );
+        window.open(`https://wa.me/${tel}?text=${msg}`,'_blank');
+      }
+    }
+  } catch(e){ toast('Error al guardar','err'); }
+}
+
 // ===== CONTACTOS EN CHAT =====
 let contactTaskId = null;
 
@@ -1304,6 +1384,7 @@ function buildCard(id,t,hoy){
   const mgmt=`<div class="tc-acts" style="border-top:1px solid var(--gb);padding-top:8px;margin-top:8px;">
     <button class="ab ab-wa" onclick="sendWA('${id}')" title="Recordatorio WA">📲 WA</button>
     <button class="ab ab-nt" onclick="markNotesRead('${id}',tareas['${id}'],'Byron');togNotas('${id}');renderTareas()">📝${nc?' ('+nc+')':''}${unread>0?' 🔴':''}</button>
+    <button class="ab" style="background:rgba(253,236,3,0.08);color:var(--am);border:1px solid rgba(253,236,3,0.2);" onclick="openEditModal('${id}')" title="Editar fecha/hora">✎ Editar</button>
     <button class="ab ab-re" onclick="openRe('${id}')">⇄ Reasignar</button>
     ${t.status==='completada'?`<button class="ab" style="background:rgba(136,136,136,0.15);color:var(--gt);border:1px solid var(--gb);" onclick="archivarJefe('${id}')">📦 Archivar</button>`:`<button class="ab ab-del" onclick="delTarea('${id}')">🗑 Eliminar</button>`}
   </div>`;
