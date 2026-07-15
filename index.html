@@ -583,6 +583,59 @@
   </div>
 </div>
 
+<!-- EDITAR TAREA -->
+<div class="overlay" id="edit-modal" style="display:none;" onclick="if(event.target.id==='edit-modal')closeEditModal()">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-title">✎ Editar Tarea <button class="mc" onclick="closeEditModal()">✕</button></div>
+    <div id="edit-task-label" style="font-size:12px;color:var(--gt);background:var(--go);padding:8px 10px;border-radius:6px;border-left:3px solid var(--am);margin-bottom:14px;"></div>
+    <div class="fg">
+      <label class="fl">Título</label>
+      <input class="fi" id="ed-titulo" placeholder="Título de la tarea">
+    </div>
+    <div class="fg">
+      <label class="fl">Descripción</label>
+      <textarea class="fta" id="ed-desc" placeholder="Instrucciones..."></textarea>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">Prioridad</label>
+        <select class="fs" id="ed-prior">
+          <option value="critica">🔴 Crítica</option>
+          <option value="alta">🟠 Alta</option>
+          <option value="media">🟡 Media</option>
+          <option value="baja">⚪ Baja</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl">Tipo</label>
+        <select class="fs" id="ed-tipo">
+          <option>Administrativo</option><option>Compras</option>
+          <option>Atención al cliente</option><option>Operativo</option>
+          <option>Reporte</option><option>Bodega</option>
+        </select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg">
+        <label class="fl">📅 Fecha límite</label>
+        <input class="fi" id="ed-fecha" type="date">
+      </div>
+      <div class="fg">
+        <label class="fl">🕐 Hora límite</label>
+        <input class="fi" id="ed-hora" type="time">
+      </div>
+    </div>
+    <div class="fg" style="background:rgba(253,236,3,0.05);border:1px solid rgba(253,236,3,0.15);border-radius:6px;padding:10px 12px;">
+      <div style="font-size:11px;color:var(--am);font-weight:700;margin-bottom:6px;">📝 Motivo del cambio (opcional)</div>
+      <input class="fi" id="ed-razon" placeholder="Ej: Se amplía el plazo por disponibilidad de piezas..." style="background:var(--go);">
+    </div>
+    <div class="mf">
+      <button class="btn-c" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-p" onclick="guardarEdicion()">Guardar cambios ▶</button>
+    </div>
+  </div>
+</div>
+
 <!-- REASIGNAR -->
 <div class="reover" id="re-modal" style="display:none;">
   <div class="remodal">
