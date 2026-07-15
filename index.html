@@ -422,6 +422,9 @@
       </button>
     </div>
     <div class="kpi-bar">
+      <div class="kpi-item" style="grid-column:1/-1;background:rgba(253,236,3,0.06);padding:5px;border-bottom:1px solid var(--gb);display:none;" id="kpi-member-lbl">
+        <span style="font-size:10px;color:var(--am);font-weight:700;letter-spacing:1px;" id="kpi-member-txt">TODOS</span>
+      </div>
       <div class="kpi-item"><div class="kv" id="k-a" style="color:var(--az)">0</div><div class="kl">Proceso</div></div>
       <div class="kpi-item"><div class="kv" id="k-v" style="color:var(--na)">0</div><div class="kl">Vo.Bo.</div></div>
       <div class="kpi-item"><div class="kv" id="k-d" style="color:var(--ve)">0</div><div class="kl">Complet.</div></div>
@@ -1261,7 +1264,12 @@ async function loadAndRender(){
 
 // ===== STATS =====
 function calcStats(n){
-  const list=Object.values(tareas).filter(t=>(n==='todos'||t.asignado===n)&&t.status!=='archivada');
+  // trim() por si hay espacios extra en Firebase
+  const list=Object.values(tareas).filter(t=>{
+    if(t.status==='archivada') return false;
+    if(n==='todos') return true;
+    return (t.asignado||'').trim()===n.trim();
+  });
   const a=list.filter(t=>t.status==='activa').length;
   const v=list.filter(t=>t.status==='pendiente-vobo').length;
   const d=list.filter(t=>t.status==='completada').length;
@@ -1277,12 +1285,22 @@ function renderJefe(){
 }
 
 function updateStats(){
-  const g=calcStats('todos');
-  document.getElementById('k-a').textContent=g.a;
-  document.getElementById('k-v').textContent=g.v;
-  document.getElementById('k-d').textContent=g.d;
-  document.getElementById('k-t').textContent=g.tot;
-  document.getElementById('k-p').textContent=g.pct+'%';
+  const g=calcStats('todos'); // global para badges
+  // KPI bar — stats del miembro seleccionado
+  const kpi=calcStats(miembro);
+  document.getElementById('k-a').textContent=kpi.a;
+  document.getElementById('k-v').textContent=kpi.v;
+  document.getElementById('k-d').textContent=kpi.d;
+  document.getElementById('k-t').textContent=kpi.tot;
+  document.getElementById('k-p').textContent=kpi.pct+'%';
+  // Mostrar etiqueta del miembro seleccionado
+  const lbl=document.getElementById('kpi-member-lbl');
+  const lblTxt=document.getElementById('kpi-member-txt');
+  const names={todos:'TODOS',Ricardo:'RICARDO CÓRBAR',Kevin:'KEVIN GARCÍA',William:'WILLIAM CALEL',Mario:'MARIO CHACÓN'};
+  if(lbl&&lblTxt){
+    lbl.style.display = miembro==='todos' ? 'none' : 'block';
+    lblTxt.textContent = '📊 Viendo: '+(names[miembro]||miembro.toUpperCase());
+  }
   const vb=document.getElementById('vobo-hbtn');
   document.getElementById('vobo-badge').textContent=g.v;
   vb.style.display=g.v>0?'flex':'none';
@@ -1674,24 +1692,30 @@ function setF(btn,f){
 
 function selMember(el,m){
   document.querySelectorAll('.tm').forEach(x=>x.classList.remove('sel'));
-  el.classList.add('sel');miembro=m;
+  el.classList.add('sel');
+  miembro=m;
   // Sync quick selector buttons
   document.querySelectorAll('.col-btn').forEach(b=>b.classList.remove('active'));
   const cb=document.getElementById('cb-'+m);if(cb)cb.classList.add('active');
   const names={todos:'Todas las Tareas',Ricardo:'Ricardo Córbar',Kevin:'Kevin García',William:'William Calel',Mario:'Mario Chacón'};
-  document.getElementById('ctitle').textContent=names[m]||m;
-  updateStats();renderTareas();
+  const ct=document.getElementById('ctitle');
+  if(ct)ct.textContent=names[m]||m;
+  updateStats();
+  renderTareas();
 }
 
 function selMemberBtn(btn,m){
   document.querySelectorAll('.col-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');miembro=m;
+  btn.classList.add('active');
+  miembro=m;
   // Sync left panel
   document.querySelectorAll('.tm').forEach(x=>x.classList.remove('sel'));
   const tm=document.getElementById('tm-'+m);if(tm)tm.classList.add('sel');
   const names={todos:'Todas las Tareas',Ricardo:'Ricardo Córbar',Kevin:'Kevin García',William:'William Calel',Mario:'Mario Chacón'};
-  document.getElementById('ctitle').textContent=names[m]||m;
-  updateStats();renderTareas();
+  const ct=document.getElementById('ctitle');
+  if(ct)ct.textContent=names[m]||m;
+  updateStats();
+  renderTareas();
 }
 
 // ===== NUEVA TAREA =====
