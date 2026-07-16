@@ -1871,28 +1871,26 @@ function selMember(el,m){
   document.querySelectorAll('.tm').forEach(x=>x.classList.remove('sel'));
   el.classList.add('sel');
   miembro=m;
-  // Sync quick selector buttons
   document.querySelectorAll('.col-btn').forEach(b=>b.classList.remove('active'));
   const cb=document.getElementById('cb-'+m);if(cb)cb.classList.add('active');
   const names={todos:'Todas las Tareas',Ricardo:'Ricardo Córbar',Kevin:'Kevin García',William:'William Calel',Mario:'Mario Chacón'};
   const ct=document.getElementById('ctitle');
   if(ct)ct.textContent=names[m]||m;
   updateStats();
-  renderTareas();
+  if(jefeRepVisible) renderJefeReporte(); else renderTareas();
 }
 
 function selMemberBtn(btn,m){
   document.querySelectorAll('.col-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   miembro=m;
-  // Sync left panel
   document.querySelectorAll('.tm').forEach(x=>x.classList.remove('sel'));
   const tm=document.getElementById('tm-'+m);if(tm)tm.classList.add('sel');
   const names={todos:'Todas las Tareas',Ricardo:'Ricardo Córbar',Kevin:'Kevin García',William:'William Calel',Mario:'Mario Chacón'};
   const ct=document.getElementById('ctitle');
   if(ct)ct.textContent=names[m]||m;
   updateStats();
-  renderTareas();
+  if(jefeRepVisible) renderJefeReporte(); else renderTareas();
 }
 
 // ===== NUEVA TAREA =====
