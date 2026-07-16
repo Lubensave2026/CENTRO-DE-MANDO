@@ -429,7 +429,10 @@
   <div class="panel-center" id="pcenter">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <div><div style="font-size:14px;font-weight:700;" id="ctitle">Todas las Tareas</div><div style="font-size:10px;color:var(--gt);margin-top:1px;" id="csub">—</div></div>
-      <button class="btn-p" onclick="openModal()">+ Nueva Tarea</button>
+      <div style="display:flex;gap:7px;">
+        <button class="btn-p" style="background:var(--go);color:var(--am);border:1px solid rgba(253,236,3,0.3);" onclick="toggleJefeReporte()">📊 Reporte</button>
+        <button class="btn-p" onclick="openModal()">+ Nueva Tarea</button>
+      </div>
     </div>
     <!-- SELECTOR RÁPIDO DE COLABORADOR -->
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--gb);">
@@ -468,6 +471,7 @@
       <button class="fb" onclick="setF(this,'media')">🟡 Media</button>
     </div>
     <div id="tlist"><div style="text-align:center;color:var(--gt);padding:30px;font-size:12px;">Cargando tareas...</div></div>
+    <div id="jefe-rep" style="display:none;"></div>
   </div>
 
   <!-- RIGHT — SOLICITUDES -->
@@ -944,6 +948,151 @@ function ts(){return new Date().toLocaleTimeString('es-GT',{hour:'2-digit',minut
 function fd(s){if(!s)return'';return new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'});}
 function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+(type||'')+' show';setTimeout(()=>t.className='toast',3000);}
 function loading(show){document.getElementById('loading').style.display=show?'flex':'none';}
+// ===== REPORTE JEFE =====
+let jefeRepVisible = false;
+
+function toggleJefeReporte(){
+  jefeRepVisible = !jefeRepVisible;
+  const tlist  = document.getElementById('tlist');
+  const rep    = document.getElementById('jefe-rep');
+  const filtros= document.querySelector('.filtros');
+  const btn    = document.querySelector('button[onclick="toggleJefeReporte()"]');
+  if(jefeRepVisible){
+    if(tlist)  tlist.style.display='none';
+    if(filtros)filtros.style.display='none';
+    if(rep)    rep.style.display='block';
+    if(btn){btn.style.background='var(--am)';btn.style.color='var(--neg)';btn.style.borderColor='var(--am)';}
+    renderJefeReporte();
+  } else {
+    if(tlist)  tlist.style.display='block';
+    if(filtros)filtros.style.display='flex';
+    if(rep)    rep.style.display='none';
+    if(btn){btn.style.background='var(--go)';btn.style.color='var(--am)';btn.style.borderColor='rgba(253,236,3,0.3)';}
+  }
+}
+
+function renderJefeReporte(){
+  const container = document.getElementById('jefe-rep');
+  if(!container) return;
+  const hoy   = new Date().toISOString().split('T')[0];
+  const ahora = new Date();
+  const manana= new Date(); manana.setDate(manana.getDate()+1);
+  const mananaStr = manana.toISOString().split('T')[0];
+
+  // Filtrar por miembro activo si hay uno seleccionado
+  const todasLasTareas = Object.entries(tareas)
+    .filter(([,t])=>{
+      if(t.status==='archivada') return false;
+      if(miembro!=='todos') return (t.asignado||'').trim()===miembro.trim();
+      return true;
+    })
+    .map(([id,t])=>{
+      let pct=0, colorBarra='var(--ve)';
+      if(t.creadaEn && t.fecha){
+        const inicio = new Date(t.creadaEn);
+        const limStr = t.fecha+(t.hora?'T'+t.hora:'T23:59');
+        const limite = new Date(limStr);
+        const total  = limite - inicio;
+        const trans  = ahora - inicio;
+        pct = total>0 ? Math.min(100,Math.round(trans/total*100)) : 0;
+        colorBarra = pct>=100?'#EF4444':pct>=80?'#F97316':pct>=50?'var(--am)':'var(--ve)';
+      }
+      return {id,t,pct,colorBarra};
+    })
+    .sort((a,b)=>b.pct-a.pct); // menos tiempo disponible primero
+
+  if(!todasLasTareas.length){
+    container.innerHTML=`<div style="text-align:center;color:var(--gt);padding:30px;">Sin tareas para reportar.</div>`;
+    return;
+  }
+
+  // Resumen
+  const enP   = todasLasTareas.filter(({t})=>t.status==='activa').length;
+  const vobo  = todasLasTareas.filter(({t})=>t.status==='pendiente-vobo').length;
+  const venc  = todasLasTareas.filter(({pct,t})=>pct>=100&&t.status==='activa').length;
+  const cerr  = todasLasTareas.filter(({t})=>t.status==='completada').length;
+
+  const fShort=(s)=>s?new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'}):'—';
+  const fStart=(iso)=>iso?new Date(iso).toLocaleDateString('es-GT',{day:'2-digit',month:'short'}):'—';
+  const fechaClass=(f)=>f===hoy?'rep-fecha hoy':f===mananaStr?'rep-fecha manana':'rep-fecha';
+
+  // Avatar del colaborador
+  const avHtml=(nombre)=>{
+    const av=TEAM[nombre]||{bg:'#888',initials:'?'};
+    return `<div style="width:22px;height:22px;border-radius:50%;background:${av.bg};color:white;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;margin-right:5px;vertical-align:middle;">${av.initials}</div>`;
+  };
+
+  function estadoBadge(t,pct){
+    if(pct>=100&&t.status==='activa') return`<span class="rep-estado" style="background:rgba(239,68,68,0.2);color:#F87171;">⏰ Vencida</span>`;
+    if(t.status==='pendiente-vobo')   return`<span class="rep-estado" style="background:rgba(249,115,22,0.15);color:#FB923C;">⏳ Vo.Bo.</span>`;
+    if(t.status==='completada')       return`<span class="rep-estado" style="background:rgba(34,197,94,0.15);color:var(--ve);">✅ Cerrada</span>`;
+    return`<span class="rep-estado" style="background:rgba(59,130,246,0.15);color:#60A5FA;">🔵 Proceso</span>`;
+  }
+
+  const priorBadge={
+    critica:`<span class="rep-prior" style="color:#FF4444;">🔴 Crít.</span>`,
+    alta:   `<span class="rep-prior" style="color:var(--na);">🟠 Alta</span>`,
+    media:  `<span class="rep-prior" style="color:var(--am);">🟡 Med.</span>`,
+    baja:   `<span class="rep-prior" style="color:var(--ve);">⚪ Baja</span>`,
+  };
+  const rowClass={critica:'rep-row-critica',alta:'rep-row-alta',media:'rep-row-media',baja:'rep-row-baja'};
+
+  const filas = todasLasTareas.map(({id,t,pct,colorBarra})=>`
+    <tr class="${rowClass[t.prioridad]||''}">
+      <td>
+        <div style="display:flex;align-items:center;">
+          ${avHtml(t.asignado)}
+          <div>
+            <div class="rep-task-name" title="${t.titulo}">${t.titulo}</div>
+            <div class="rep-task-tipo">${t.asignado} · ${t.tipo||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><div class="rep-fecha">${fStart(t.creadaEn)}</div></td>
+      <td><div class="${fechaClass(t.fecha)}">${fShort(t.fecha)}${t.hora?' '+t.hora:''}</div></td>
+      <td>
+        <div class="rep-bar-wrap">
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:${pct}%;background:${colorBarra};"></div></div>
+          <div class="rep-bar-pct" style="color:${colorBarra};">${pct}%</div>
+        </div>
+      </td>
+      <td>${estadoBadge(t,pct)}</td>
+      <td>${priorBadge[t.prioridad]||'—'}</td>
+    </tr>`).join('');
+
+  container.innerHTML=`
+    <div class="rep-resumen">
+      <div class="rep-card"><div class="rep-card-num" style="color:var(--az);">${enP}</div><div class="rep-card-lbl">Proceso</div></div>
+      <div class="rep-card"><div class="rep-card-num" style="color:var(--na);">${vobo}</div><div class="rep-card-lbl">Vo.Bo.</div></div>
+      <div class="rep-card"><div class="rep-card-num" style="color:var(--ro);">${venc}</div><div class="rep-card-lbl">Vencidas</div></div>
+      <div class="rep-card"><div class="rep-card-num" style="color:var(--ve);">${cerr}</div><div class="rep-card-lbl">Cerradas</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--gt);margin-bottom:8px;">
+      ${miembro==='todos'?'Todo el equipo':'Solo: <strong style="color:var(--am)">'+miembro+'</strong>'} · ${todasLasTareas.length} tarea${todasLasTareas.length!==1?'s':''} · ordenadas por urgencia
+    </div>
+    <div class="rep-wrap">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>Tarea / Colaborador</th>
+            <th>Inicio</th>
+            <th>Límite</th>
+            <th>% Tiempo</th>
+            <th>Estado</th>
+            <th>Prior.</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div style="padding:10px 0 4px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:#EF4444;"></div>Vencida/Crítica</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--na);"></div>Urgente</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--am);"></div>Media</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--ve);"></div>Holgura</div>
+    </div>`;
+}
+
 // ===== EDITAR TAREA =====
 let editId = null;
 
@@ -1926,6 +2075,154 @@ function staffTab(tab){
   else if(tab==='d'){document.getElementById('staff-done').style.display='block';renderStaffDone();}
   else if(tab==='r'){document.getElementById('staff-rep').style.display='block';renderStaffReporte();}
   else{document.getElementById('staff-sol').style.display='block';renderStaffSolicitudes();}
+}
+
+// ===== REPORTE JEFE =====
+let jefeRepAbierto = false;
+
+function toggleJefeReporte(){
+  jefeRepAbierto = !jefeRepAbierto;
+  const rep = document.getElementById('jefe-rep');
+  const lista = document.getElementById('tlist');
+  const filtros = document.querySelector('.filtros');
+  const kpiBar = document.querySelector('.kpi-bar');
+  if(!rep||!lista) return;
+  if(jefeRepAbierto){
+    rep.style.display='block';
+    lista.style.display='none';
+    if(filtros) filtros.style.display='none';
+    if(kpiBar) kpiBar.style.display='none';
+    renderJefeReporte();
+  } else {
+    rep.style.display='none';
+    lista.style.display='block';
+    if(filtros) filtros.style.display='flex';
+    if(kpiBar) kpiBar.style.display='grid';
+    renderTareas();
+  }
+}
+
+function renderJefeReporte(){
+  const c=document.getElementById('jefe-rep');if(!c)return;
+  const hoy=new Date().toISOString().split('T')[0];
+  const ahora=new Date();
+  const manana=new Date(); manana.setDate(manana.getDate()+1);
+  const mananaStr=manana.toISOString().split('T')[0];
+
+  // Todas las tareas no archivadas, filtradas por miembro si hay uno seleccionado
+  const todas=Object.entries(tareas)
+    .filter(([,t])=>t.status!=='archivada'&&(miembro==='todos'||(t.asignado||'').trim()===miembro))
+    .map(([id,t])=>{
+      let pctTiempo=0, colorBarra='var(--ve)';
+      if(t.creadaEn&&t.fecha){
+        const inicio=new Date(t.creadaEn);
+        const limiteStr=t.fecha+(t.hora?'T'+t.hora:'T23:59');
+        const limite=new Date(limiteStr);
+        const total=limite-inicio;
+        const trans=ahora-inicio;
+        pctTiempo=total>0?Math.min(100,Math.round(trans/total*100)):0;
+        if(pctTiempo>=100) colorBarra='#EF4444';
+        else if(pctTiempo>=80) colorBarra='#F97316';
+        else if(pctTiempo>=50) colorBarra='var(--am)';
+        else colorBarra='var(--ve)';
+      }
+      return{id,t,pctTiempo,colorBarra};
+    })
+    .sort((a,b)=>b.pctTiempo-a.pctTiempo);
+
+  if(!todas.length){
+    c.innerHTML=`<div style="text-align:center;color:var(--gt);padding:30px;">Sin tareas para reportar.</div>`;
+    return;
+  }
+
+  // Resumen por estado
+  const enP=todas.filter(({t})=>t.status==='activa').length;
+  const vob=todas.filter(({t})=>t.status==='pendiente-vobo').length;
+  const ven=todas.filter(({pctTiempo,t})=>pctTiempo>=100&&t.status==='activa').length;
+  const cer=todas.filter(({t})=>t.status==='completada').length;
+
+  const resumen=`<div class="rep-resumen">
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--az);">${enP}</div><div class="rep-card-lbl">Proceso</div></div>
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--na);">${vob}</div><div class="rep-card-lbl">Vo.Bo.</div></div>
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--ro);">${ven}</div><div class="rep-card-lbl">Vencidas</div></div>
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--ve);">${cer}</div><div class="rep-card-lbl">Cerradas</div></div>
+  </div>`;
+
+  const fShort=(s)=>s?new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'}):'—';
+  const fStart=(iso)=>iso?new Date(iso).toLocaleDateString('es-GT',{day:'2-digit',month:'short'}):'—';
+
+  function estadoBadge(t,pct){
+    if(pct>=100&&t.status==='activa') return`<span class="rep-estado" style="background:rgba(239,68,68,0.2);color:#F87171;">⏰ Vencida</span>`;
+    if(t.status==='pendiente-vobo')   return`<span class="rep-estado" style="background:rgba(249,115,22,0.15);color:#FB923C;">⏳ Vo.Bo.</span>`;
+    if(t.status==='completada')       return`<span class="rep-estado" style="background:rgba(34,197,94,0.15);color:var(--ve);">✅ Cerrada</span>`;
+    return`<span class="rep-estado" style="background:rgba(59,130,246,0.15);color:#60A5FA;">🔵 Proceso</span>`;
+  }
+
+  const priorBadge={
+    critica:`<span class="rep-prior" style="color:#FF4444;">🔴 Crít.</span>`,
+    alta:   `<span class="rep-prior" style="color:var(--na);">🟠 Alta</span>`,
+    media:  `<span class="rep-prior" style="color:var(--am);">🟡 Med.</span>`,
+    baja:   `<span class="rep-prior" style="color:var(--ve);">⚪ Baja</span>`,
+  };
+  const rowClass={critica:'rep-row-critica',alta:'rep-row-alta',media:'rep-row-media',baja:'rep-row-baja'};
+
+  function fechaClass(f){
+    if(f===hoy) return 'rep-fecha hoy';
+    if(f===mananaStr) return 'rep-fecha manana';
+    return 'rep-fecha';
+  }
+
+  const av_map={Ricardo:'#3B82F6',Kevin:'#8B5CF6',William:'#22C55E',Mario:'#F97316'};
+
+  const filas=todas.map(({id,t,pctTiempo,colorBarra})=>`
+    <tr class="${rowClass[t.prioridad]||''}">
+      <td>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${av_map[t.asignado]||'#888'};flex-shrink:0;"></div>
+          <div>
+            <div class="rep-task-name" title="${t.titulo}">${t.titulo}</div>
+            <div class="rep-task-tipo">${t.asignado} · ${t.tipo||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><div class="rep-fecha">${fStart(t.creadaEn)}</div></td>
+      <td><div class="${fechaClass(t.fecha)}">${fShort(t.fecha)}${t.hora?' '+t.hora:''}</div></td>
+      <td>
+        <div class="rep-bar-wrap">
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:${pctTiempo}%;background:${colorBarra};"></div></div>
+          <div class="rep-bar-pct" style="color:${colorBarra};">${pctTiempo}%</div>
+        </div>
+      </td>
+      <td>${estadoBadge(t,pctTiempo)}</td>
+      <td>${priorBadge[t.prioridad]||'—'}</td>
+    </tr>`).join('');
+
+  const titulo=miembro==='todos'?'Todo el equipo':miembro;
+  c.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-size:13px;font-weight:700;color:var(--am);">📊 Reporte — ${titulo}</div>
+      <button class="btn-c" style="font-size:11px;padding:5px 10px;" onclick="toggleJefeReporte()">✕ Cerrar</button>
+    </div>
+    ${resumen}
+    <div class="rep-wrap">
+      <table class="rep-table">
+        <thead><tr>
+          <th>Tarea / Colaborador</th>
+          <th>Inicio</th>
+          <th>Límite</th>
+          <th>% Tiempo</th>
+          <th>Estado</th>
+          <th>Prior.</th>
+        </tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div style="padding:8px 0 4px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:#EF4444;"></div>Vencida</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--na);"></div>Urgente</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--am);"></div>Media</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--ve);"></div>Holgura</div>
+    </div>`;
 }
 
 function renderStaffReporte(){
