@@ -226,7 +226,33 @@
   .mob-overlay.show{display:block;}
 
   /* STAFF VIEW */
-  .staff-tabs{display:flex;border-bottom:1px solid var(--gb);margin-bottom:12px;}
+  .staff-tabs{display:flex;border-bottom:1px solid var(--gb);margin-bottom:12px;overflow-x:auto;}
+  .staff-tab{white-space:nowrap;}
+  /* REPORTE */
+  .rep-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px 8px;}
+  .rep-table{border-collapse:collapse;width:max-content;min-width:100%;}
+  .rep-table th{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gt);padding:8px 10px;border-bottom:2px solid var(--gb);white-space:nowrap;text-align:left;background:var(--go);position:sticky;top:0;}
+  .rep-table td{padding:10px;border-bottom:1px solid #1A1A1A;vertical-align:middle;font-size:12px;}
+  .rep-table tr:hover td{background:#161616;}
+  .rep-row-critica td:first-child{border-left:3px solid #FF0000;}
+  .rep-row-alta td:first-child{border-left:3px solid var(--na);}
+  .rep-row-media td:first-child{border-left:3px solid var(--am);}
+  .rep-row-baja td:first-child{border-left:3px solid var(--ve);}
+  .rep-task-name{font-weight:700;color:#FFFFFF;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;}
+  .rep-task-tipo{font-size:10px;color:var(--gt);margin-top:2px;}
+  .rep-fecha{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--gt);white-space:nowrap;}
+  .rep-fecha.hoy{color:#EF4444;font-weight:700;}
+  .rep-fecha.manana{color:#F97316;font-weight:600;}
+  .rep-bar-wrap{width:90px;}
+  .rep-bar{height:8px;background:var(--gb);border-radius:4px;overflow:hidden;margin-bottom:3px;}
+  .rep-bar-fill{height:100%;border-radius:4px;transition:width 0.4s;}
+  .rep-bar-pct{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;text-align:center;}
+  .rep-estado{font-size:10px;font-weight:700;padding:3px 7px;border-radius:4px;white-space:nowrap;}
+  .rep-prior{font-size:11px;font-weight:700;white-space:nowrap;text-align:center;}
+  .rep-resumen{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px;}
+  .rep-card{background:var(--go);border:1px solid var(--gb);border-radius:7px;padding:8px;text-align:center;}
+  .rep-card-num{font-size:22px;font-weight:900;font-family:'JetBrains Mono',monospace;}
+  .rep-card-lbl{font-size:9px;color:var(--gt);text-transform:uppercase;letter-spacing:0.5px;}
   .staff-tab{padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;color:var(--gt);border-bottom:2px solid transparent;}
   .staff-tab.act{color:var(--am);border-bottom-color:var(--am);}
 
@@ -485,11 +511,13 @@
       <div class="staff-tabs">
         <div class="staff-tab act" id="stb-p" onclick="staffTab('p')">📋 Mis Tareas</div>
         <div class="staff-tab" id="stb-d" onclick="staffTab('d')">✅ Completadas</div>
+        <div class="staff-tab" id="stb-r" onclick="staffTab('r')">📊 Reporte</div>
         <div class="staff-tab" id="stb-s" onclick="staffTab('s')">📨 Solicitudes</div>
       </div>
       <div style="padding:0 14px 14px;">
         <div id="staff-tareas"></div>
         <div id="staff-done" style="display:none;"></div>
+        <div id="staff-rep" style="display:none;"></div>
         <div id="staff-sol" style="display:none;">
           <div class="fg"><label class="fl">¿Qué necesitas?</label><textarea class="fta" id="ss-txt" placeholder="Describe tu solicitud..."></textarea></div>
           <div class="fg"><label class="fl">Urgencia</label><select class="fs" id="ss-urg"><option>Normal</option><option>Urgente 🔴</option></select></div>
@@ -1890,13 +1918,135 @@ function renderStaffHeader(){
 function staffTab(tab){
   staffTab_=tab;
   document.querySelectorAll('.staff-tab').forEach(t=>t.classList.remove('act'));
-  document.getElementById('stb-'+tab).classList.add('act');
-  document.getElementById('staff-tareas').style.display='none';
-  document.getElementById('staff-done').style.display='none';
-  document.getElementById('staff-sol').style.display='none';
+  const btn=document.getElementById('stb-'+tab);if(btn)btn.classList.add('act');
+  ['staff-tareas','staff-done','staff-rep','staff-sol'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
   if(tab==='p'){document.getElementById('staff-tareas').style.display='block';renderStaffTareas();}
   else if(tab==='d'){document.getElementById('staff-done').style.display='block';renderStaffDone();}
+  else if(tab==='r'){document.getElementById('staff-rep').style.display='block';renderStaffReporte();}
   else{document.getElementById('staff-sol').style.display='block';renderStaffSolicitudes();}
+}
+
+function renderStaffReporte(){
+  const c=document.getElementById('staff-rep');if(!c)return;
+  const hoy=new Date().toISOString().split('T')[0];
+  const ahora=new Date();
+
+  // Todas las tareas del colaborador excepto archivadas
+  const mine=Object.entries(tareas)
+    .filter(([,t])=>t.asignado===currentUser&&t.status!=='archivada')
+    .map(([id,t])=>{
+      // Calcular % de tiempo transcurrido
+      let pctTiempo=0, colorBarra='var(--ve)';
+      if(t.creadaEn && t.fecha){
+        const inicio=new Date(t.creadaEn);
+        // fecha límite con hora si existe
+        const limiteStr=t.fecha+(t.hora?'T'+t.hora:('T23:59'));
+        const limite=new Date(limiteStr);
+        const total=limite-inicio;
+        const trans=ahora-inicio;
+        pctTiempo=total>0?Math.min(100,Math.round(trans/total*100)):0;
+        if(pctTiempo>=100) colorBarra='#EF4444';
+        else if(pctTiempo>=80) colorBarra='#F97316';
+        else if(pctTiempo>=50) colorBarra='var(--am)';
+        else colorBarra='var(--ve)';
+      }
+      return{id,t,pctTiempo,colorBarra};
+    })
+    // Ordenar: menos tiempo disponible primero (más % transcurrido primero)
+    .sort((a,b)=>b.pctTiempo-a.pctTiempo);
+
+  if(!mine.length){
+    c.innerHTML=`<div style="text-align:center;color:var(--gt);padding:30px;font-size:13px;">Sin tareas para reportar.</div>`;
+    return;
+  }
+
+  // Resumen rápido
+  const enProceso=mine.filter(({t})=>t.status==='activa').length;
+  const vobo=mine.filter(({t})=>t.status==='pendiente-vobo').length;
+  const vencidas=mine.filter(({pctTiempo,t})=>pctTiempo>=100&&t.status==='activa').length;
+  const cerradas=Object.values(tareas).filter(t=>t.asignado===currentUser&&t.status==='completada').length;
+
+  const resumen=`<div class="rep-resumen">
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--az);">${enProceso}</div><div class="rep-card-lbl">Proceso</div></div>
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--na);">${vobo}</div><div class="rep-card-lbl">Vo.Bo.</div></div>
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--ro);">${vencidas}</div><div class="rep-card-lbl">Vencidas</div></div>
+    <div class="rep-card"><div class="rep-card-num" style="color:var(--ve);">${cerradas}</div><div class="rep-card-lbl">Cerradas</div></div>
+  </div>`;
+
+  // Función para formatear fecha corta
+  const fShort=(s)=>s?new Date(s+'T12:00:00').toLocaleDateString('es-GT',{day:'2-digit',month:'short'}):'—';
+  const fStart=(iso)=>iso?new Date(iso).toLocaleDateString('es-GT',{day:'2-digit',month:'short'}):'—';
+
+  // Badge estado
+  function estadoBadge(t,pct){
+    if(pct>=100&&t.status==='activa') return`<span class="rep-estado" style="background:rgba(239,68,68,0.2);color:#F87171;">⏰ Vencida</span>`;
+    if(t.status==='pendiente-vobo')   return`<span class="rep-estado" style="background:rgba(249,115,22,0.15);color:#FB923C;">⏳ Vo.Bo.</span>`;
+    if(t.status==='completada')       return`<span class="rep-estado" style="background:rgba(34,197,94,0.15);color:var(--ve);">✅ Cerrada</span>`;
+    return`<span class="rep-estado" style="background:rgba(59,130,246,0.15);color:#60A5FA;">🔵 Proceso</span>`;
+  }
+
+  // Badge prioridad
+  const priorBadge={
+    critica:`<span class="rep-prior" style="color:#FF4444;">🔴 Crít.</span>`,
+    alta:   `<span class="rep-prior" style="color:var(--na);">🟠 Alta</span>`,
+    media:  `<span class="rep-prior" style="color:var(--am);">🟡 Med.</span>`,
+    baja:   `<span class="rep-prior" style="color:var(--ve);">⚪ Baja</span>`,
+  };
+
+  // Clase de fila por prioridad
+  const rowClass={critica:'rep-row-critica',alta:'rep-row-alta',media:'rep-row-media',baja:'rep-row-baja'};
+
+  // Color fecha límite
+  const manana=new Date(); manana.setDate(manana.getDate()+1);
+  const mananaStr=manana.toISOString().split('T')[0];
+  function fechaClass(f){ if(f===hoy) return 'rep-fecha hoy'; if(f===mananaStr) return 'rep-fecha manana'; return 'rep-fecha'; }
+
+  const filas=mine.map(({id,t,pctTiempo,colorBarra})=>`
+    <tr class="${rowClass[t.prioridad]||''}">
+      <td>
+        <div class="rep-task-name" title="${t.titulo}">${t.titulo}</div>
+        <div class="rep-task-tipo">${t.tipo||''}</div>
+      </td>
+      <td><div class="rep-fecha">${fStart(t.creadaEn)}</div></td>
+      <td>
+        <div class="${fechaClass(t.fecha)}">${fShort(t.fecha)}${t.hora?' '+t.hora:''}</div>
+      </td>
+      <td>
+        <div class="rep-bar-wrap">
+          <div class="rep-bar"><div class="rep-bar-fill" style="width:${pctTiempo}%;background:${colorBarra};"></div></div>
+          <div class="rep-bar-pct" style="color:${colorBarra};">${pctTiempo}%</div>
+        </div>
+      </td>
+      <td>${estadoBadge(t,pctTiempo)}</td>
+      <td>${priorBadge[t.prioridad]||'—'}</td>
+    </tr>`).join('');
+
+  const tabla=`
+    <div class="rep-wrap">
+      <table class="rep-table">
+        <thead>
+          <tr>
+            <th>Tarea</th>
+            <th>Inicio</th>
+            <th>Límite</th>
+            <th>% Tiempo</th>
+            <th>Estado</th>
+            <th>Prior.</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div style="padding:8px 0 4px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:#EF4444;"></div>Vencida/Crítica</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--na);"></div>Alta/Urgente</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--am);"></div>Media</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--gt);"><div style="width:8px;height:8px;border-radius:50%;background:var(--ve);"></div>Holgura</div>
+    </div>`;
+
+  c.innerHTML=resumen+tabla;
 }
 
 function renderStaffView(){
